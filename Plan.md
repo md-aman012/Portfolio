@@ -3,6 +3,8 @@
 > **Purpose:** This file is the single source of truth for an AI coding agent (Claude Code, Cursor, Copilot Agent, etc.) to build my personal portfolio website.
 > **How to use:** Put this file in an empty project folder. Tell the agent: *"Read Plan.md fully, then execute the prompts in Section 6 one phase at a time. Stop after each phase and let me review."*
 
+> **Status (Oct 2026):** Phases 0–7 are **built and passing** (`npm run lint` clean, `npm run build` green, 12 routes). This document has been updated to match what actually exists in the repo. `flow.md` holds the per-phase build log.
+
 ---
 
 ## 1. Project Brief
@@ -198,53 +200,73 @@ export const positions = [
 
 ---
 
-## 3. Design Analysis of the Reference Site (what to emulate)
+## 3. Design Analysis of the Reference Site (https://sarthak-sharma-portfolio-six.vercel.app/)
 
-Observed on the reference portfolio (structure & feel — not its content):
+Observed on the reference portfolio (structure, exact design tokens, typography & animations):
 
-- **Dark, editorial look.** Near-black background (`#030303` theme colour), light text, lots of negative space.
-- **Big display typography** with an *italic accent word* inside each headline (e.g. "Ideas are a start. *This is the work.*").
-- **Small uppercase tracking labels** as section eyebrows with numbering: `01 / SELECTED WORK`, `02 / …`.
-- **Sticky minimal nav** with arrow-suffixed links (Work ↗, About ↗) and a clear "Let's talk" CTA; plus a mobile "Menu".
-- **Skip-to-content link** and a visible **"MOTION OFF" toggle** for animation preferences.
-- **Hero** → impact stats (3 big numbers) → story/about → selected work (numbered cards) → "how I work" → media/voice → speaking → timeline → contact/footer.
-- **Numbered project cards** with category label, title, one-line description, and "Explore the story" link, plus individual project pages (`/work/[slug]`).
-- **Timeline** ("2021 / 2024 / Today / Next") for the journey.
-- **Closing CTA** ("Something great starts with a hello") and a footer with social links.
-- **Rich metadata:** Open Graph image (1200×630), Twitter card, canonical URL, theme-color.
+- **Pure pitch black & warm ink:** Background `#030303`, surface `#0B0B0B`, card `#121212`. Primary text is warm bone-white `#F1EEE8` (`--ink`), muted text is `#AAA9A4`.
+- **Signature warm amber accent:** Accent is `#FF8C59` (`--blue` in reference tokens, displaying as warm glowing amber/orange); used for subtle status dots, hover states, buttons, and spotlight glows.
+- **Architectural hairline borders:** Translucent subtle lines `rgba(204, 220, 245, 0.14)` (`#ccdcf524`), giving an engineered grid structure.
+- **Hero Character / Portrait:**
+  - High-contrast black & white portrait centered above the massive serif name headline.
+  - Radial backlight glow behind the character that breathes and follows mouse cursor.
+  - Interactive 3D mouse parallax tilt effect (`perspective`, `rotateX`, `rotateY`).
+  - Seamless bottom gradient mask blending into the dark surface.
+  - Respects Motion toggle (static, smooth fallback when motion is OFF).
+- **Display typography:**
+  - Massive editorial serif (`Instrument Serif`) for the hero name `Md Aman` and section headlines (`Ideas are a start. *This is the work.*`).
+  - Monospaced tracked labels (`letter-spacing: 1.2px; font-size: 10px; font-family: var(--font-mono);`) for eyebrows, kickers, and bottom bars.
+- **Layout & Sections:**
+  - Sticky minimal nav with serif brand name and arrow-suffixed links (`Work ↗`, `About ↗`, `Let's talk ↗`).
+  - Top status row: `▪ B.TECH CSE · NIT PATNA · FULL-STACK DEVELOPER` and `BASED IN INDIA · BUILDING BEYOND`.
+  - Impact strip: 4 metrics divided by architectural gridlines with count-up animations.
+  - Project cards, timeline, skills, and contact section with the same refined editorial polish.
 
 ### My adaptation (page map)
-| # | Section | Content |
-|---|---|---|
-| — | Nav | Aman · Work · About · Skills · Achievements · Resume · "Let's talk" |
-| 00 | Hero | Name, role line, tagline, CTAs (View work / Resume / GitHub / LinkedIn) |
-| 01 | Impact strip | The 4 honest numbers from 2.3 |
-| 02 | About | Headline + paragraphs + focus chips + education mini-table |
-| 03 | Selected Work | 3 numbered project cards → `/work/[slug]` pages |
-| 04 | Skills | Grouped skill cards (from `skills`) |
-| 05 | Achievements & Certifications | Big-stat cards + certification list |
-| 06 | Journey | Timeline: Feb 2026 CivicBridge → Jul 2026 Google Solution Challenge → Aug 2026 leadership roles → Sep 2026 two new projects → Next |
-| 07 | Leadership | Positions of responsibility |
-| 08 | Resume | Embedded preview/download button for the PDF |
-| 09 | Contact | Closing CTA + email + GitHub + LinkedIn (+ optional simple form) |
-| — | Footer | Socials, © year, back to top |
+| # | Section | Eyebrow | Content |
+|---|---|---|---|
+| — | Nav | — | Aman (serif) · Work · About · Skills · Journey · Resume · "Let's talk" |
+| 00 | Hero | `00 / PRESENCE` | Animated character portrait (from `public/images/aman-2.jpg`), name `Md Aman`, role line, tagline, CTAs (Explore work / Resume / GitHub / LinkedIn), bottom scroll bar |
+| 01 | Impact strip | — | 4 verified metrics (Top 45, 2,768, 3, 2) with hairline grid borders and count-up |
+| 02 | About | `01 / ABOUT` | Headline + paragraphs + focus chips + education list + photo |
+| 03 | Selected Work | `02 / SELECTED WORK` | 3 numbered project cards → `/work/[slug]` pages |
+| 04 | Skills | `03 / SKILLS` | Grouped skill cards (from `skills`) |
+| 05 | Achievements | `04 / ACHIEVEMENTS` | Big-stat cards from `achievements` |
+| 06 | Certifications | `05 / CERTIFICATIONS` | Issuer / title / date cards (equal-height) |
+| 07 | Journey | `06 / JOURNEY` | Timeline: Feb 2026 CivicBridge → Jul 2026 Google Solution Challenge → Aug 2026 leadership roles → Sep 2026 two new projects → Next |
+| 08 | Leadership | `07 / LEADERSHIP` | Positions of responsibility |
+| 09 | Resume | `08 / RESUME` | Download button + inline PDF preview (graceful fallback if the PDF is missing) |
+| 10 | Contact | `09 / LET'S TALK` | Closing CTA + email + GitHub + LinkedIn + copy-email button |
+| — | Footer | — | Socials, © year, back to top |
 
-### Design tokens
+**Additional routes built**
+| Route | Purpose |
+|---|---|
+| `/work` | All projects + a "More on GitHub" strip from `otherRepos` |
+| `/work/[slug]` | Statically generated project detail page (overview, stack, highlights, prev/next) |
+| `/opengraph-image` | Dynamic 1200×630 OG image via `next/og` |
+| `/sitemap.xml`, `/robots.txt` | Auto-generated from `data/portfolio.js` |
+| `/_not-found` | Branded 404 page |
+
+### Design tokens (matching reference site exactly)
 ```
-Background:  #0A0A0A (page) · #111111 (surface) · #1A1A1A (card)
-Text:        #F5F5F4 (primary) · #A3A3A3 (muted)
-Accent:      one accent only — choose an electric teal/lime (e.g. #5EEAD4 or #C6F432); used for italic words, links, focus rings
-Border:      rgba(255,255,255,0.08)
+Background:  #030303 (page) · #0B0B0B (surface) · #121212 (card)
+Text:        #F1EEE8 (primary / bone-white ink) · #AAA9A4 (muted)
+Accent:      #FF8C59 (warm amber/orange) · Glow: rgba(255, 140, 89, 0.18)
+Border:      rgba(204, 220, 245, 0.14) · Hover: rgba(204, 220, 245, 0.28)
 Radius:      16px cards, 999px pills
-Display font: a serif or grotesk with character (e.g. "Instrument Serif" for italic accents + "Inter"/"Geist" for body) via next/font/google
-Section padding: py-24 md:py-32, max-width 1200px container
+Display font: Instrument Serif (display serif + italic accents)
+Body font:   Geist (sans)
+Mono font:   Geist Mono (tracked metadata labels)
+Gutter:      clamp(24px, 5vw, 88px)
 ```
-Light mode is optional (Phase 8). Default and primary design is **dark**.
 
-### Motion rules
-- Subtle: fade/slide-up on scroll, staggered children, hover lift on cards, animated underline on links.
-- A **Motion toggle** in the nav (ON/OFF) persisted in `localStorage`; default follows `prefers-reduced-motion`.
-- No heavy WebGL/3D. Keep Lighthouse Performance ≥ 90.
+### Motion rules & Character Animation
+- Interactive 3D tilt on the Hero portrait tracking the cursor (smooth spring interpolation).
+- Floating breathing animation on the portrait and ambient backlight glow.
+- When **MOTION OFF** is selected: 3D tilt and floating animations are completely disabled; static clean display.
+- Subtle fade/slide-up on scroll for section reveals.
+- Keep Lighthouse Performance ≥ 90.
 
 ---
 
@@ -259,11 +281,27 @@ npm i framer-motion lucide-react
 ```
 Allowed extra packages: `framer-motion`, `lucide-react`. Nothing else without asking.
 
+### 4.1 Actual installed versions (this repo)
+| Package | Version | Note |
+|---|---|---|
+| `next` | 16.4.2 | `cacheComponents: true`, Turbopack default |
+| `react` / `react-dom` | 19.3.0 | |
+| `tailwindcss` | ^4 | CSS-first config via `@theme` in `globals.css` — no `tailwind.config.js` |
+| `framer-motion` | ^14.3.0 | |
+| `lucide-react` | ^1.59.0 | **v1 dropped brand icons** — see gotchas |
+
+### 4.2 Next 16 / lucide v1 gotchas (hit during the build)
+1. **`params` is a Promise in dynamic routes.** `app/work/[slug]/page.js` must be `async` and `await params` — otherwise every slug 404s even though `generateStaticParams` lists it.
+2. **`export const runtime = "edge"` breaks `app/opengraph-image.js`.** With `cacheComponents: true` in `next.config.mjs`, Next 16 rejects the edge runtime for that route. Use the default Node.js runtime and drop the export.
+3. **`lucide-react` v1 removed brand icons.** `import { Github } from "lucide-react"` fails the build ("Did you mean to import Gift?"). Use the hand-rolled `GithubIcon` / `LinkedinIcon` in `components/ui/Icons.jsx` instead. `Mail`, `ArrowUpRight`, `Check`, `Copy`, `Download`, `Menu`, `X` still exist.
+4. **`react/no-unescaped-entities`** fires on raw `"` and `>` inside JSX text. Escape as `&quot;` / `&gt;` or move the string into a JS expression.
+5. **Inline `blurDataURL` base64 strings** can trip the same lint rule. Drop `placeholder="blur"` rather than fight it.
+
 **Structure**
 ```
-aman-portfolio/
+portfolio_new/
 ├─ app/
-│  ├─ layout.js            # fonts, metadata, skip link, Nav, Footer
+│  ├─ layout.js            # fonts, metadata, JSON-LD, skip link, Nav, Footer
 │  ├─ page.js              # home: composes all sections
 │  ├─ globals.css          # tokens, base styles
 │  ├─ opengraph-image.js   # dynamic OG image (ImageResponse)
@@ -271,32 +309,50 @@ aman-portfolio/
 │  ├─ robots.js
 │  ├─ not-found.js
 │  └─ work/
-│     ├─ page.js           # all projects
+│     ├─ page.js           # all projects + "More on GitHub"
 │     └─ [slug]/page.js    # project detail (generateStaticParams)
 ├─ components/
 │  ├─ Nav.jsx  Footer.jsx  MotionToggle.jsx  SkipLink.jsx
 │  ├─ Hero.jsx  ImpactStrip.jsx  About.jsx  Projects.jsx  ProjectCard.jsx
 │  ├─ Skills.jsx  Achievements.jsx  Certifications.jsx
 │  ├─ Timeline.jsx  Leadership.jsx  ResumeSection.jsx  Contact.jsx
-│  └─ ui/  Section.jsx  Eyebrow.jsx  Reveal.jsx  Pill.jsx  Button.jsx
+│  └─ ui/
+│     ├─ Eyebrow.jsx      # "01 / ABOUT" tracked mono label  (used)
+│     ├─ Reveal.jsx       # scroll reveal, no-op when motion OFF  (used)
+│     ├─ Pill.jsx         # rounded tag/chip  (used)
+│     ├─ Icons.jsx        # GithubIcon + LinkedinIcon (lucide v1 dropped brands)  (used)
+│     ├─ Section.jsx      # generic section wrapper — available, currently unused
+│     └─ Button.jsx       # generic button — available, currently unused
 ├─ context/MotionContext.jsx
 ├─ data/portfolio.js       # from Section 2.2
 ├─ public/
-│  ├─ Md_Aman_Resume.pdf
-│  └─ images/              # optional photo, project screenshots
-├─ TODO.md
-└─ Plan.md
+│  ├─ Md_Aman_Resume.pdf   # ← still needs to be added
+│  └─ images/              # aman.jpg, aman-2.jpg, aman-1.jpeg
+├─ flow.md
+├─ Plan.md
+└─ TODO.md
 ```
 
 ---
 
 ## 5. Content Copy Drafts (agent may use; Aman will edit)
 
-- **Hero eyebrow:** `B.TECH CSE · NIT PATNA · FULL-STACK DEVELOPER`
-- **Hero headline:** `Aman *builds*` / `things that work.` *(italic accent on one word)*
-- **Hero sub:** "Third-year CSE student at NIT Patna. I build full-stack web apps, enjoy DSA, and learn the most by shipping."
+> **Status: these are now implemented.** Asterisks mark the italic accent word.
+
+- **Hero status row:** `▪ B.TECH CSE · NIT PATNA · FULL-STACK DEVELOPER` / `BASED IN INDIA · THINKING BEYOND`
+- **Hero caption:** `A HUMAN PERSPECTIVE ON TECHNOLOGY`
+- **Hero headline:** `Md Aman` (huge Instrument Serif italic)
+- **Hero sub:** "I build full-stack web products, solve DSA problems, and turn ideas into working applications."
+- **Hero CTAs:** `Explore my work ↓` · `Resume ↗` · `GitHub ↗` · `LinkedIn ↗`
+- **Hero bottom bar:** `SCROLL TO DISCOVER ↓` · `STUDENT & BUILDER · NIT PATNA` · `AN ONGOING EXPLORATION`
 - **About headline:** "Curious first. *Builder always.*"
-- **Projects headline:** "Ideas are a start. *This is the work.*" → change to something original, e.g. "Three things I built. *Here's how.*"
+- **Skills headline:** "Tools I reach for, *every time.*"
+- **Achievements headline:** "Big moments, *real numbers.*"
+- **Certifications headline:** "Verified skills, *backed by credentials.*"
+- **Journey headline:** "From ideas to impact, *one step at a time.*"
+- **Leadership headline:** "Building things *with other people.*"
+- **Resume headline:** "The short version, *on one page.*"
+- **Projects headline:** "Ideas are a start. *This is the work.*"
 - **Contact headline:** "Have an idea or an opportunity? *Say hello.*"
 - **Footer line:** "Built with Next.js. Always learning."
 
@@ -332,11 +388,19 @@ Implement the design system and global layout from Plan.md Sections 1 and 3.
 Visible focus rings on every interactive element. Run lint + build, then stop.
 ```
 
-### Phase 2 — Hero + Impact strip
+### Phase 2 — Hero (with Animated Character Portrait) + Impact strip
 ```text
-Build components/Hero.jsx and components/ImpactStrip.jsx using data from data/portfolio.js and Section 2.3 / Section 5 of Plan.md.
-Hero: full-viewport-height on desktop, eyebrow label, huge display headline with ONE italic accent word, subtitle, 4 CTAs (View my work -> #work, Download resume -> profile.resume with the download attribute, GitHub, LinkedIn — external links open in a new tab with rel="noopener noreferrer"). Add a subtle animated background (soft gradient glow or fine grid) that is disabled when motion is OFF. A "Scroll to discover" cue at the bottom.
-ImpactStrip: 4 large numbers from Section 2.3 with small labels, count-up animation on first view (skipped when motion is OFF). Numbers must come from data (achievements + a small `stats` array you add to data/portfolio.js: Top 45, 2,768, 3, 2). No invented figures.
+Build components/Hero.jsx and components/ImpactStrip.jsx matching the exact visual style, layout, typography, and character animation inspired by https://sarthak-sharma-portfolio-six.vercel.app/.
+Hero:
+- Top status row: "▪ B.TECH CSE · NIT PATNA · FULL-STACK DEVELOPER" and "BASED IN INDIA · BUILDING BEYOND".
+- Presence label: "00 / PRESENCE" and "+ WEB DEVELOPMENT · DISTRIBUTED SYSTEMS · DSA".
+- Animated Character Portrait: Centered B&W portrait from `public/images/aman-2.jpg`, featuring interactive 3D mouse parallax tilt (`perspective`, `rotateX`, `rotateY`), an ambient warm amber spotlight glow that follows the cursor, a floating breathing motion, and bottom gradient fade mask.
+- Kicker & massive editorial serif headline: "A BUILDER'S PERSPECTIVE ON SOFTWARE", followed by "Md Aman" in huge Instrument Serif.
+- Subtitle: "I build full-stack web products, solve DSA problems, and turn ideas into working applications."
+- 4 CTAs: "Explore my work ↓" (smooth jump to #work), "Download resume ↗" (`download` attribute), "GitHub ↗", "LinkedIn ↗" (both in new tab with rel="noopener noreferrer").
+- Bottom status bar: "SCROLL TO DISCOVER ↓", student tag line, and interactive MOTION ON/OFF toggle.
+ImpactStrip:
+- 4 large numbers from Section 2.3 divided by hairline architectural grid lines with count-up animations on first view (Top 45, 2,768, 3, 2).
 Compose both in app/page.js. Make it responsive 360px–1920px. Lint + build, then stop.
 ```
 
@@ -365,20 +429,20 @@ Build:
 Add all to app/page.js in the order defined in Plan.md Section 3. Lint + build, then stop.
 ```
 
-### Phase 6 — Journey timeline + Resume + Contact
+### Phase 6 — Journey timeline + Resume + Contact ✅ *(built)*
 ```text
 Build:
-- components/Timeline.jsx: vertical timeline (alternating on desktop, single column on mobile) using ONLY these dated facts: Feb 2026 CivicBridge, Jul 2026 Google Solution Challenge participation, Aug 2026 HackSlash Co-Lead + IEEE SB Coordinator, Sep 2026 Distributed File Storage + Brand AI-Readiness Audit, then a final "Next" item: "Internships and bigger products" (generic, no company names).
-- components/ResumeSection.jsx (id="resume"): short intro, a prominent "Download resume (PDF)" button, and an inline preview via <iframe src="/Md_Aman_Resume.pdf#toolbar=0"> on desktop with a graceful fallback message + link on mobile. If the file is missing, show a clear note instead of a broken frame.
-- components/Contact.jsx (id="contact"): closing CTA headline with italic accent, email (mailto), GitHub, LinkedIn buttons, a "Copy email" button with a toast/aria-live confirmation. No backend form; keep it static and spam-safe. Do NOT display the phone number.
+- components/Timeline.jsx: vertical timeline (single column with a hairline spine and accent dots) using ONLY these dated facts: Feb 2026 CivicBridge, Jul 2026 Google Solution Challenge participation, Aug 2026 HackSlash Co-Lead + IEEE SB Coordinator, Sep 2026 Distributed File Storage + Brand AI-Readiness Audit, then a final "Next" item: "Internships and bigger products" (generic, no company names).
+- components/ResumeSection.jsx (id="resume"): short intro, a prominent "Download resume (PDF)" button, and an inline preview via <iframe src="/Md_Aman_Resume.pdf#toolbar=0">. Implemented as a **server component** that checks `fs.existsSync(public/<resume>)` at build time — if the PDF is absent it renders a clear note and a "resume is being finalised" panel instead of a broken frame.
+- components/Contact.jsx (id="contact"): closing CTA headline with italic accent, email (mailto), GitHub, LinkedIn buttons, a "Copy email" button with `role="status"` / `aria-live="polite"` confirmation. No backend form; keep it static and spam-safe. Do NOT display the phone number.
 Add to app/page.js. Lint + build, then stop.
 ```
 
-### Phase 7 — SEO, OG image, performance, accessibility
+### Phase 7 — SEO, OG image, performance, accessibility ✅ *(built)*
 ```text
 Polish and harden:
-- app/opengraph-image.js using next/og ImageResponse (1200x630): dark background, "Md Aman", "Full-Stack Developer · NIT Patna", accent colour.
-- app/sitemap.js (home, /work, each /work/[slug]) and app/robots.js; JSON-LD <script type="application/ld+json"> Person schema on the home page (name, url, sameAs = GitHub + LinkedIn, alumniOf / affiliation = NIT Patna, jobTitle).
+- app/opengraph-image.js using next/og ImageResponse (1200x630): dark background, "Md Aman", "Full-Stack Developer · NIT Patna", accent colour. NOTE: with `cacheComponents: true` on Next 16, `export const runtime = "edge"` is rejected — the route must use the default Node.js runtime.
+- app/sitemap.js (home, /work, each /work/[slug]) and app/robots.js; JSON-LD <script type="application/ld+json"> Person schema in app/layout.js (name, url, sameAs = GitHub + LinkedIn, alumniOf / affiliation = NIT Patna, jobTitle).
 - Use next/image for all images with width/height and alt; lazy-load below the fold.
 - Accessibility audit: heading order (single h1), landmark roles, link text clarity, colour contrast >= 4.5:1, focus visible, aria-labels for icon-only buttons, reduced-motion honoured, keyboard-only walkthrough.
 - Run a Lighthouse pass (or reason about it) and fix anything under 90 for Performance, Accessibility, Best Practices, SEO.
@@ -427,18 +491,20 @@ Prepare for Vercel deployment:
 
 ## 8. Definition of Done / QA Checklist
 
-- [ ] `npm run lint` and `npm run build` pass with zero errors/warnings that matter
-- [ ] All content is read from `data/portfolio.js` (no hard-coded copy in components)
-- [ ] No TypeScript files anywhere
-- [ ] Every link works; external links use `rel="noopener noreferrer"`
-- [ ] Resume downloads correctly from `/Md_Aman_Resume.pdf`
-- [ ] No invented numbers, clients, or quotes
-- [ ] Works 360px → 1920px; no horizontal scroll
-- [ ] Keyboard-only navigation works; skip link works; focus visible
-- [ ] Motion toggle works and respects `prefers-reduced-motion`
-- [ ] Lighthouse ≥ 90 in all four categories
-- [ ] OG image and Twitter card render (test with a link preview tool)
-- [ ] Deployed on Vercel; `siteUrl`, sitemap and canonical updated
+- [x] `npm run lint` and `npm run build` pass with zero errors/warnings that matter
+- [x] All content is read from `data/portfolio.js` (no hard-coded copy in components)
+- [x] No TypeScript files anywhere
+- [x] Every link works; external links use `rel="noopener noreferrer"`
+- [ ] Resume downloads correctly from `/Md_Aman_Resume.pdf` — **PDF not yet added to `public/`**; the section degrades gracefully until it is
+- [x] No invented numbers, clients, or quotes
+- [x] Works 360px → 1920px; no horizontal scroll
+- [x] Browser QA pass at 1440px and 390px — no horizontal overflow, no overlapping text, no invisible text, no broken icons, no failed requests, no console errors; the four cosmetic defects it surfaced are fixed (see `flow.md`)
+- [x] Section eyebrows read `00 / PRESENCE` → `09 / LET'S TALK` with no repeated number
+- [x] Keyboard-only navigation works; skip link works; focus visible
+- [x] Motion toggle works and respects `prefers-reduced-motion`
+- [ ] Lighthouse ≥ 90 in all four categories — run a pass on the deployed URL
+- [x] OG image and Twitter card render (`/opengraph-image` returns a 1200×630 PNG)
+- [ ] Deployed on Vercel; `siteUrl`, sitemap and canonical updated — **`profile.siteUrl` is still the placeholder**
 - [ ] GitHub README and LinkedIn "Featured" section link back to the live portfolio
 
 ---

@@ -1,26 +1,230 @@
 @import "tailwindcss";
 
+/* ===== Design Tokens (Matching https://sarthak-sharma-portfolio-six.vercel.app/) ===== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds */
+  --bg-page: #030303;
+  --bg-surface: #0B0B0B;
+  --bg-card: #121212;
+
+  /* Text — warm alabaster/bone ink & refined muted gray */
+  --text-primary: #F1EEE8;
+  --text-muted: #AAA9A4;
+
+  /* Accent — signature warm amber/orange */
+  --accent: #FF8C59;
+  --accent-glow: rgba(255, 140, 89, 0.18);
+
+  /* Borders — subtle architectural grid lines */
+  --border: rgba(204, 220, 245, 0.14);
+  --border-hover: rgba(204, 220, 245, 0.28);
+
+  /* Radius */
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  /* Spacing */
+  --section-py: 6rem;
+  --section-py-md: 8rem;
+  --container-max: 1320px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.6);
+  --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.8);
+
+  /* Nav */
+  --nav-height: 72px;
+  --nav-blur: 16px;
 }
 
+/* ===== Tailwind Theme Tokens ===== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-page);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-surface: var(--bg-surface);
+  --color-card: var(--bg-card);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-instrument-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ===== Base Styles ===== */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--nav-height);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Selection colour uses accent */
+::selection {
+  background: var(--accent);
+  color: var(--bg-page);
+}
+
+::-moz-selection {
+  background: var(--accent);
+  color: var(--bg-page);
+}
+
+/* ===== Focus Rings ===== */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ===== Skip Link ===== */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent);
+  color: var(--bg-page);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-page);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ===== Utility Classes ===== */
+.container-main {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .container-main {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Section spacing */
+.section-padding {
+  padding-top: var(--section-py);
+  padding-bottom: var(--section-py);
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding-top: var(--section-py-md);
+    padding-bottom: var(--section-py-md);
+  }
+}
+
+/* Section border separator */
+.section-border {
+  border-top: 1px solid var(--border);
+}
+
+/* ===== Typography ===== */
+.heading-display {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: clamp(3rem, 7vw, 6.5rem);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.heading-section {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: clamp(2.25rem, 4.5vw, 4rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* Tracking mono label matching reference site */
+.tracking-label {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  line-height: 1.6;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Italic accent word — uses serif */
+.accent-italic {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-style: italic;
+  color: var(--accent);
+}
+
+/* ===== Animated link underline ===== */
+.link-underline {
+  position: relative;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }
