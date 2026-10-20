@@ -1,286 +1,277 @@
 "use client";
 
-import { useRef, useCallback } from "react";
-import Image from "next/image";
+import { useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useMotion } from "@/context/MotionContext";
 import { profile, socials } from "@/data/portfolio";
 import { ArrowDown, ArrowUpRight, Download } from "lucide-react";
 import { GithubIcon, LinkedinIcon } from "@/components/ui/Icons";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { gsap } from "gsap";
+
+// Dynamically import ParticlePortrait with SSR disabled to prevent WebGL server-side issues
+const ParticlePortrait = dynamic(() => import("./ParticlePortrait"), {
+  ssr: false,
+});
 
 export default function Hero() {
   const { motionEnabled } = useMotion();
   const heroRef = useRef(null);
 
-  // Mouse tilt physics for the character portrait
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const eyebrowRef = useRef(null);
+  const nameRef = useRef(null);
+  const introRef = useRef(null);
+  const actionsRef = useRef(null);
+  const bottomRef = useRef(null);
 
-  const mouseXSpring = useSpring(x, { stiffness: 180, damping: 25 });
-  const mouseYSpring = useSpring(y, { stiffness: 180, damping: 25 });
+  // Coordinated entrance animation with GSAP
+  useEffect(() => {
+    if (!motionEnabled) return;
 
-  // 3D rotation angles derived from normalized cursor position (-0.5 to 0.5)
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [8, -8]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-8, 8]);
-  const glowX = useTransform(mouseXSpring, [-0.5, 0.5], ["35%", "65%"]);
-  const glowY = useTransform(mouseYSpring, [-0.5, 0.5], ["25%", "55%"]);
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-  const handleMouseMove = useCallback(
-    (e) => {
-      if (!motionEnabled || !heroRef.current) return;
-      const rect = heroRef.current.getBoundingClientRect();
-      const mouseX = (e.clientX - rect.left) / rect.width - 0.5;
-      const mouseY = (e.clientY - rect.top) / rect.height - 0.5;
-      x.set(mouseX);
-      y.set(mouseY);
-    },
-    [motionEnabled, x, y]
-  );
+      // Eyebrow reveal
+      if (eyebrowRef.current) {
+        tl.fromTo(
+          eyebrowRef.current,
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.9 },
+          0.35
+        );
+      }
 
-  const handleMouseLeave = useCallback(() => {
-    x.set(0);
-    y.set(0);
-  }, [x, y]);
+      // Oversized editorial name reveal
+      if (nameRef.current) {
+        tl.fromTo(
+          nameRef.current,
+          { opacity: 0, y: 35, scale: 0.97 },
+          { opacity: 1, y: 0, scale: 1, duration: 1.15, ease: "power2.out" },
+          0.5
+        );
+      }
 
-  const github = socials.find((s) => s.label === "GitHub")?.href || "https://github.com/md-aman012";
-  const linkedin = socials.find((s) => s.label === "LinkedIn")?.href || "https://www.linkedin.com/in/md-aman-76000a324/";
+      // Intro text reveal
+      if (introRef.current) {
+        tl.fromTo(
+          introRef.current,
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.9 },
+          0.75
+        );
+      }
+
+      // Actions / CTAs reveal
+      if (actionsRef.current) {
+        tl.fromTo(
+          actionsRef.current,
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.85 },
+          0.95
+        );
+      }
+
+      // Bottom bar reveal
+      if (bottomRef.current) {
+        tl.fromTo(
+          bottomRef.current,
+          { opacity: 0 },
+          { opacity: 1, duration: 1.0 },
+          1.1
+        );
+      }
+    }, heroRef);
+
+    return () => ctx.revert();
+  }, [motionEnabled]);
+
+  const github =
+    socials.find((s) => s.label === "GitHub")?.href ||
+    "https://github.com/md-aman012";
+  const linkedin =
+    socials.find((s) => s.label === "LinkedIn")?.href ||
+    "https://www.linkedin.com/in/md-aman-76000a324/";
 
   return (
     <section
       ref={heroRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       id="hero"
-      className="relative flex flex-col justify-between min-h-[calc(100vh-var(--nav-height))] pt-[calc(var(--nav-height)+1rem)] pb-6 sm:pb-8 px-4 sm:px-8 lg:px-16 overflow-hidden select-none"
+      className="relative flex flex-col justify-between min-h-[100svh] pt-[calc(var(--nav-height)+0.5rem)] pb-6 sm:pb-8 px-4 sm:px-8 lg:px-16 overflow-hidden select-none bg-[#030303]"
       style={{
-        backgroundColor: "var(--bg-page)",
         borderBottom: "1px solid var(--border)",
       }}
     >
-      {/* Background Architectural Grid Lines */}
+      {/* Real-time 3D Cinematic Particle Portrait Canvas */}
+      <ParticlePortrait />
+
+      {/* Architectural Background Grid Lines */}
       <div
-        className="pointer-events-none absolute inset-0 z-0 opacity-25"
+        className="pointer-events-none absolute inset-0 z-0 opacity-20"
         style={{
           backgroundImage: `linear-gradient(90deg, var(--border) 1px, transparent 1px)`,
-          backgroundSize: "25% 100%",
-          maskImage: "linear-gradient(to bottom, black 40%, transparent 95%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 95%)",
+          backgroundSize: "20% 100%",
+          maskImage: "linear-gradient(to bottom, black 30%, transparent 92%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 92%)",
         }}
         aria-hidden="true"
       />
 
-      {/* Dynamic Ambient Spotlight Glow behind the character */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-700"
+      {/* Subtle Warm Amber Glow centered behind head and shoulders */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-1000"
         style={{
-          background: motionEnabled
-            ? `radial-gradient(circle at 50% 35%, rgba(255, 140, 89, 0.16) 0%, rgba(255, 140, 89, 0.04) 40%, transparent 70%)`
-            : `radial-gradient(circle at 50% 35%, rgba(255, 140, 89, 0.12) 0%, transparent 60%)`,
+          background:
+            "radial-gradient(circle at 50% 22%, rgba(255, 140, 89, 0.12) 0%, rgba(255, 140, 89, 0.03) 38%, transparent 70%)",
         }}
         aria-hidden="true"
       />
 
-      {/* Top Status Line */}
+      {/* Top Status Bar */}
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 py-2 border-b border-[var(--border)]">
-        <div className="flex items-center gap-2 tracking-label text-[9px] sm:text-[10px]">
+        <div className="flex items-center gap-2.5 tracking-label text-[9px] sm:text-[10px]">
           <span
-            className="w-1.5 h-1.5 rounded-xs shrink-0"
+            className="w-1.5 h-1.5 rounded-full shrink-0 shadow-[0_0_8px_var(--accent)]"
             style={{ backgroundColor: "var(--accent)" }}
             aria-hidden="true"
           />
-          <span>B.TECH CSE · NIT PATNA · FULL-STACK DEVELOPER</span>
+          <span className="font-mono text-[var(--text-muted)]">
+            B.TECH CSE · NIT PATNA · FULL-STACK DEVELOPER
+          </span>
         </div>
-        <div className="tracking-label text-[10px] hidden sm:block">
+        <div className="tracking-label text-[10px] hidden sm:block font-mono text-[var(--text-muted)] opacity-80">
           BASED IN INDIA · THINKING BEYOND
         </div>
       </div>
 
-      {/* Main Center Stage: Animated Character Portrait & Typography */}
-      <div className="relative z-10 my-auto py-6 sm:py-8 flex flex-col items-center text-center">
-        {/* Presence Sub-metadata on Desktop */}
-        <div className="w-full flex justify-between items-start mb-2 px-2 hidden lg:flex">
-          <div className="text-left tracking-label">
-            <span className="block text-[var(--accent)] font-medium">00 / PRESENCE</span>
-            <div className="mt-2 space-y-0.5 text-[9px] text-[var(--text-muted)] opacity-80 font-mono">
-              <p>+ FULL-STACK WEB</p>
-              <p>&nbsp;&nbsp;DISTRIBUTED SYSTEMS</p>
-              <p>&nbsp;&nbsp;DSA & PROBLEM SOLVING</p>
-            </div>
-          </div>
-          <div className="text-right tracking-label opacity-70">
-            <p>NIT PATNA</p>
-            <p className="text-[9px] mt-1">CLASS OF 2028</p>
-          </div>
-        </div>
-
-        {/* Character Portrait with 3D Tilt & Floating Animation */}
-        <div
-          className="relative my-2 sm:my-3"
-          style={{ perspective: 1000 }}
-        >
-          {/* Animated Glow Halo */}
-          {motionEnabled && (
-            <motion.div
-              className="absolute -inset-6 rounded-full blur-2xl pointer-events-none opacity-40"
-              style={{
-                background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
-                left: glowX,
-                top: glowY,
-              }}
-              animate={{
-                scale: [0.95, 1.05, 0.95],
-                opacity: [0.35, 0.5, 0.35],
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          )}
-
-          {/* 3D Tilting Character Container */}
-          <motion.div
-            style={{
-              ...(motionEnabled
-                ? {
-                    rotateX,
-                    rotateY,
-                    transformStyle: "preserve-3d",
-                  }
-                : {}),
-              backgroundColor: "#080808",
-              boxShadow: "0 12px 36px rgba(0, 0, 0, 0.8)",
-            }}
-            animate={
-              motionEnabled
-                ? {
-                    y: [0, -6, 0],
-                  }
-                : {}
-            }
-            transition={
-              motionEnabled
-                ? {
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }
-                : {}
-            }
-            className="relative w-48 sm:w-56 md:w-64 aspect-[3.8/5] mx-auto overflow-hidden rounded-2xl border border-[var(--border)] transition-shadow duration-300"
-          >
-            {/* The Cutout Portrait Image */}
-            <Image
-              src="/images/aman-2.jpg"
-              alt="Md Aman — Full-Stack Developer"
-              fill
-              priority
-              sizes="(max-width: 640px) 192px, (max-width: 768px) 224px, 256px"
-              className="object-cover object-top transition-transform duration-500 ease-out hover:scale-105"
-              style={{
-                filter: "grayscale(100%) contrast(110%) brightness(95%)",
-              }}
-            />
-
-            {/* Seamless Bottom Gradient Fade into pure dark */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background:
-                  "linear-gradient(to bottom, transparent 60%, rgba(3, 3, 3, 0.7) 85%, #030303 100%)",
-              }}
-            />
-
-            {/* Ambient vignette */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                boxShadow: "inset 0 0 20px rgba(0, 0, 0, 0.6)",
-              }}
-            />
-          </motion.div>
-        </div>
-
-        {/* Caption below Portrait */}
-        <p className="tracking-label text-[9px] sm:text-[10px] mt-4 mb-1 text-[var(--text-muted)]">
-          A HUMAN PERSPECTIVE ON TECHNOLOGY
-        </p>
-
-        {/* Huge Serif Display Headline matching Sarthak's */}
+      {/* Main Center Stage: Layered Oversized Typography Over Particle Portrait */}
+      <div className="relative z-10 mt-auto mb-6 sm:mb-10 pt-4 pb-2 flex flex-col items-center text-center max-w-5xl mx-auto px-2 pointer-events-none">
+        {/* Oversized High-Contrast Editorial Serif Name */}
         <h1
-          className="font-serif italic text-5xl sm:text-7xl md:text-8xl lg:text-[6.5rem] tracking-tight leading-[0.95] text-[var(--text-primary)] my-2"
+          ref={nameRef}
+          className="font-serif italic text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[12.5rem] tracking-tight leading-[0.9] text-[var(--text-primary)] my-1 sm:my-2 select-text"
+          style={{
+            textShadow: "0 6px 40px rgba(0, 0, 0, 0.85), 0 2px 15px rgba(0, 0, 0, 0.95)",
+            color: "#F1EEE8",
+          }}
         >
-          {profile.name}
+          Aman
         </h1>
 
-        {/* Subtitle */}
+        {/* Refined Kicker below the name */}
         <p
-          className="text-sm sm:text-base md:text-lg max-w-xl mx-auto mt-2 leading-relaxed font-normal"
-          style={{ color: "var(--text-muted)" }}
+          ref={eyebrowRef}
+          className="tracking-label text-[10px] sm:text-xs text-[var(--text-muted)] font-mono uppercase tracking-[0.24em] mt-3 sm:mt-4 mb-1.5"
+          style={{
+            textShadow: "0 2px 10px rgba(0, 0, 0, 0.8)",
+          }}
         >
-          I build full-stack web products, solve DSA problems, and turn ideas into working applications.
+          A DEVELOPER BUILDING THINGS FOR THE WEB
         </p>
 
-        {/* CTAs matching Sarthak Sharma's style */}
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-          {/* Explore my work button */}
+        {/* Short introduction below the kicker */}
+        <p
+          ref={introRef}
+          className="text-sm sm:text-base md:text-lg lg:text-xl max-w-xl mx-auto mt-2 sm:mt-3 leading-relaxed font-normal text-[var(--text-muted)]"
+          style={{
+            textShadow: "0 2px 12px rgba(0, 0, 0, 0.9)",
+          }}
+        >
+          I build thoughtful digital experiences with code, creativity, and curiosity.
+        </p>
+
+        {/* Calls to Action: Understated, elegant buttons */}
+        <div
+          ref={actionsRef}
+          className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-3.5 sm:gap-5 pointer-events-auto"
+        >
+          {/* Primary CTA: Explore My Work */}
           <a
             href="#work"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 border cursor-pointer"
+            className="inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border backdrop-blur-md cursor-pointer group"
             style={{
-              backgroundColor: "rgba(255, 255, 255, 0.04)",
-              borderColor: "var(--border)",
+              backgroundColor: "rgba(18, 18, 18, 0.75)",
+              borderColor: "rgba(255, 255, 255, 0.2)",
               color: "var(--text-primary)",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "var(--accent)";
               e.currentTarget.style.color = "var(--accent)";
-              e.currentTarget.style.backgroundColor = "rgba(255, 140, 89, 0.08)";
+              e.currentTarget.style.backgroundColor = "rgba(255, 140, 89, 0.12)";
+              e.currentTarget.style.transform = "translateY(-2px)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border)";
+              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
               e.currentTarget.style.color = "var(--text-primary)";
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
+              e.currentTarget.style.backgroundColor = "rgba(18, 18, 18, 0.75)";
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <span>Explore my work</span>
-            <ArrowDown size={13} />
+            <span>Explore My Work</span>
+            <ArrowDown
+              size={13}
+              className="transition-transform duration-300 group-hover:translate-y-0.5"
+            />
           </a>
 
-          {/* Download Resume button */}
+          {/* Secondary CTA: Let's Connect */}
           <a
-            href={profile.resume}
-            download
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 border cursor-pointer"
+            href="#contact"
+            className="inline-flex items-center gap-2 px-5 sm:px-6 py-3 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border cursor-pointer backdrop-blur-sm group"
             style={{
-              backgroundColor: "transparent",
+              backgroundColor: "rgba(10, 10, 10, 0.4)",
               borderColor: "var(--border)",
               color: "var(--text-muted)",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "var(--text-primary)";
               e.currentTarget.style.color = "var(--text-primary)";
+              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+              e.currentTarget.style.transform = "translateY(-2px)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "var(--border)";
               e.currentTarget.style.color = "var(--text-muted)";
+              e.currentTarget.style.backgroundColor = "rgba(10, 10, 10, 0.4)";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            <span>Let&apos;s Connect</span>
+            <ArrowUpRight
+              size={13}
+              className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </a>
+
+          {/* Resume link */}
+          <a
+            href={profile.resume}
+            download
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-3 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 border cursor-pointer opacity-70 hover:opacity-100"
+            style={{
+              backgroundColor: "transparent",
+              borderColor: "var(--border)",
+              color: "var(--text-muted)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--text-primary)";
+              e.currentTarget.style.borderColor = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--text-muted)";
+              e.currentTarget.style.borderColor = "var(--border)";
             }}
           >
             <Download size={13} />
             <span>Resume</span>
-            <ArrowUpRight size={12} className="opacity-70" />
           </a>
 
-          {/* GitHub link */}
+          {/* GitHub Icon Link */}
           <a
             href={github}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub profile"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 border cursor-pointer"
+            className="p-3 rounded-full text-xs transition-all duration-200 border cursor-pointer opacity-70 hover:opacity-100"
             style={{
-              backgroundColor: "transparent",
               borderColor: "var(--border)",
               color: "var(--text-muted)",
             }}
@@ -294,19 +285,16 @@ export default function Hero() {
             }}
           >
             <GithubIcon size={14} />
-            <span className="hidden sm:inline">GitHub</span>
-            <ArrowUpRight size={12} className="opacity-70" />
           </a>
 
-          {/* LinkedIn link */}
+          {/* LinkedIn Icon Link */}
           <a
             href={linkedin}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="LinkedIn profile"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 border cursor-pointer"
+            className="p-3 rounded-full text-xs transition-all duration-200 border cursor-pointer opacity-70 hover:opacity-100"
             style={{
-              backgroundColor: "transparent",
               borderColor: "var(--border)",
               color: "var(--text-muted)",
             }}
@@ -320,33 +308,39 @@ export default function Hero() {
             }}
           >
             <LinkedinIcon size={14} />
-            <span className="hidden sm:inline">LinkedIn</span>
-            <ArrowUpRight size={12} className="opacity-70" />
           </a>
         </div>
       </div>
 
       {/* Bottom Architectural Bar */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--border)] tracking-label text-[9px] sm:text-[10px]">
+      <div
+        ref={bottomRef}
+        className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--border)] tracking-label text-[9px] sm:text-[10px]"
+      >
         {/* Scroll cue */}
         <a
           href="#impact"
-          className="flex items-center gap-2 hover:text-[var(--accent)] transition-colors"
+          className="flex items-center gap-2 hover:text-[var(--accent)] transition-colors cursor-pointer group"
           aria-label="Scroll to discover impact numbers"
         >
           <span>SCROLL TO DISCOVER</span>
-          <ArrowDown size={11} className={motionEnabled ? "animate-bounce" : ""} />
+          <ArrowDown
+            size={11}
+            className={`transition-transform duration-300 group-hover:translate-y-0.5 ${
+              motionEnabled ? "animate-bounce" : ""
+            }`}
+          />
         </a>
 
         {/* Center Tagline */}
-        <span className="hidden md:inline text-[var(--text-muted)]">
+        <span className="hidden md:inline text-[var(--text-muted)] font-mono opacity-80">
           STUDENT &amp; BUILDER · NIT PATNA
         </span>
 
-        {/* Right controls */}
+        {/* Right Status */}
         <div className="flex items-center gap-4">
-          <span className="tracking-label text-[var(--text-muted)] opacity-80">
-            AN ONGOING EXPLORATION
+          <span className="tracking-label text-[var(--text-muted)] opacity-80 font-mono">
+            AN ONGOING EXPLORATION ↗
           </span>
         </div>
       </div>
