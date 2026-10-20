@@ -54,7 +54,8 @@
 /* ===== Base Styles ===== */
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: var(--nav-height);
+  /* Anchor targets land just below the fixed navbar */
+  scroll-padding-top: calc(var(--nav-height) + 1rem);
 }
 
 body {
@@ -159,11 +160,19 @@ body {
 /* ===== Typography ===== */
 .heading-display {
   font-family: var(--font-instrument-serif), Georgia, serif;
-  font-size: clamp(3rem, 7vw, 6.5rem);
+  font-size: clamp(2.5rem, 6vw, 6.5rem);
   font-weight: 400;
   line-height: 1.02;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+}
+
+/* Fluid editorial name: one line at 360/768/1440, wrapping to two clean
+   lines on very narrow viewports instead of overflowing. */
+.hero-heading {
+  font-size: clamp(2.75rem, 11vw, 12rem);
+  font-weight: 400;
+  text-wrap: balance;
 }
 
 .heading-section {
@@ -214,6 +223,111 @@ body {
   width: 100%;
 }
 
+/* ===== Navbar ===== */
+.nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.25s ease;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  color: var(--text-primary);
+}
+
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  width: 100%;
+}
+
+/* Currently scrolled-into section */
+.nav-link[aria-current="true"] {
+  color: var(--text-primary);
+}
+
+.nav-link[aria-current="true"]::after {
+  width: 100%;
+}
+
+.nav-arrow {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: var(--accent);
+  opacity: 0.55;
+  transform: translate(0, 0);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.nav-link:hover .nav-arrow,
+.nav-link:focus-visible .nav-arrow {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 1.125rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--accent);
+  color: var(--bg-page);
+  text-decoration: none;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
+}
+
+.nav-cta:hover,
+.nav-cta:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--accent-glow);
+  opacity: 0.92;
+}
+
+/* ===== Reveal on scroll ===== */
+/* The resting state of a reveal is fully visible. The animation is layered on
+   top when the element enters the viewport, so content is never trapped
+   behind `opacity: 0` if JavaScript is slow, blocked or disabled. */
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--reveal-x, 0px), var(--reveal-y, 28px), 0);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0px);
+  }
+}
+
+.reveal-play {
+  animation: reveal-rise 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -227,4 +341,18 @@ body {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* ===== Motion OFF (MOTION toggle) ===== */
+/* Mirrors the reference site: killing motion leaves every element in its
+   final, visible state — no hidden reveals, no transforms. */
+html[data-motion="off"] {
+  scroll-behavior: auto;
+}
+
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
 }

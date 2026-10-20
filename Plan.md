@@ -22,7 +22,7 @@
 1. **JavaScript only.** Files are `.js` / `.jsx`. No `.ts` / `.tsx`, no TypeScript config.
 2. **Use the App Router** (`app/` directory), React Server Components by default; add `"use client"` only where needed (animations, menu, theme/motion toggle).
 3. **Never invent facts.** Do not make up metrics, employers, testimonials, links, or project screenshots. Use only the data in Section 2. If something is missing, render a clean placeholder and list it in a `TODO.md`.
-4. **All content lives in `data/portfolio.js`.** Components read from it; no hard-coded copy inside components.
+4. **All content lives in `data/portfolio.js` and `data/projects.js`.** Components read from them; no hard-coded copy inside components.
 5. **Accessibility is required:** semantic HTML, skip-to-content link, visible focus rings, alt text, AA contrast, full keyboard navigation, `prefers-reduced-motion` respected.
 6. **Mobile first.** Must look good from 360px to 1920px.
 7. Keep dependencies minimal (see Section 4). Ask before adding anything else.
@@ -99,61 +99,7 @@ export const skills = {
   Coursework: ["DBMS", "OOPS", "Operating Systems", "DSA", "Computer Networks", "AI", "ML"],
 };
 
-export const projects = [
-  {
-    slug: "brand-ai-readiness-audit",
-    title: "Brand AI-Readiness Audit",
-    subtitle: "Agent Skill Marketplace",
-    date: "Sep 2026",
-    category: "AI tooling · Python",
-    summary:
-      "A modular system that audits websites for AI discoverability, content quality and user engagement, and outputs evidence-backed reports.",
-    highlights: [
-      "Built a modular system to audit websites for AI discoverability, content quality and user engagement.",
-      "Implemented web crawling, structured-data validation and automated issue detection.",
-      "Generated evidence-backed JSON reports with severity rankings and prioritized recommendations.",
-      "Implemented page-type-aware checks, finding deduplication, report validation and read-only website auditing.",
-    ],
-    stack: ["Python", "Web Crawling", "JSON", "Schema.org", "Playwright"],
-    github: "https://github.com/md-aman012", // TODO: replace with exact repo URL
-    live: null,
-  },
-  {
-    slug: "distributed-file-storage",
-    title: "Distributed File Storage System",
-    subtitle: "Secure full-stack file platform",
-    date: "Sep 2026",
-    category: "Full-stack · Cloud",
-    summary:
-      "A secure file storage platform with authenticated upload, download, sharing and deletion, backed by AWS S3 and PostgreSQL.",
-    highlights: [
-      "Developed a secure full-stack file storage platform supporting authenticated upload, download, sharing and deletion of user files.",
-      "Implemented JWT authentication and bcrypt password hashing with protected REST APIs.",
-      "Integrated AWS S3 and Multer-S3 for direct file streaming, user-isolated storage, MIME validation and 50 MB file-size enforcement.",
-      "Designed PostgreSQL-backed file metadata management with S3 presigned URLs for secure, time-limited downloads.",
-    ],
-    stack: ["React.js", "Node.js", "Express.js", "PostgreSQL", "AWS S3", "JWT", "Multer"],
-    github: "https://github.com/md-aman012", // TODO: exact repo URL
-    live: null, // TODO: live demo URL if deployed
-  },
-  {
-    slug: "civicbridge",
-    title: "CivicBridge",
-    subtitle: "Transparent Community–Government Feedback Platform",
-    date: "Feb 2026",
-    category: "Full-stack · Civic tech",
-    summary:
-      "A platform where residents report civic issues with images and precise location, and the community upvotes and discusses what matters most.",
-    highlights: [
-      "Developed a full-stack platform enabling residents to report civic issues with images and precise location tracking.",
-      "Built interactive features allowing users to upvote, comment and highlight trending community issues.",
-      "Incorporated mapping services (Leaflet/Mapbox) to visualize issue locations and identify geographic patterns.",
-    ],
-    stack: ["React.js", "Tailwind CSS", "Node.js", "Express.js", "MongoDB", "JWT", "Cloudinary", "Leaflet/Mapbox"],
-    github: "https://github.com/md-aman012/CivicBridge_Team_Matrix", // fork of a team repo — confirm this is the right link
-    live: null,
-  },
-];
+// Projects live in their own module — see `data/projects.js` (section 2.3).
 
 // Other public repos visible on GitHub (optional "More on GitHub" strip)
 export const otherRepos = [
@@ -190,7 +136,35 @@ export const positions = [
 ];
 ```
 
-### 2.3 Honest "impact" numbers (use ONLY these in a stats strip)
+### 2.3 Data file — create `data/projects.js`
+
+Projects get their own module so a new project only ever needs one file edited. `id` doubles as the `/work/<id>` route segment, so the card grid, the `/work` index and the detail page all update from a single append.
+
+```js
+// data/projects.js — single source of truth for every project on the site.
+export const projects = [
+  {
+    id: "brand-ai-readiness-audit",       // unique key + /work/<id> segment
+    title: "Brand AI-Readiness Audit",
+    category: "AI tooling · Python",      // short mono label on the cover
+    description: "One-paragraph summary used on the card and the detail page.",
+    tags: ["Python", "Web Crawling", "JSON", "Schema.org", "Playwright"],
+    image: "linear-gradient(135deg, rgba(255,140,89,0.16) 0%, transparent 100%)",
+    liveUrl: null,                        // null → the "Live" button renders disabled
+    repoUrl: "https://github.com/md-aman012", // null → the "Code" button renders disabled
+    // Optional extras used by the detail page:
+    subtitle: "Agent Skill Marketplace",
+    date: "Sep 2026",
+    highlights: ["…"],
+    screenshot: null,                     // set to "/images/<id>.jpg" when one exists
+    isPlaceholder: true,                  // marks a sample entry with a PLACEHOLDER badge
+  },
+];
+```
+
+Three clearly-marked demo entries ship in the file so the grid shows its full shape — each carries a `// TODO: replace with a real project` comment above it.
+
+### 2.4 Honest "impact" numbers (use ONLY these in a stats strip)
 - **Top 45 / 3,01,051+** — Adobe University Hackathon
 - **2,768** — Google Cloud Skills points (Gold League)
 - **3** — full-stack / systems projects shipped
@@ -319,15 +293,17 @@ portfolio_new/
 │  └─ ui/
 │     ├─ Eyebrow.jsx      # "01 / ABOUT" tracked mono label  (used)
 │     ├─ Reveal.jsx       # scroll reveal, no-op when motion OFF  (used)
+│     ├─ useReveal.js     # one-shot IntersectionObserver hook behind Reveal  (used)
 │     ├─ Pill.jsx         # rounded tag/chip  (used)
 │     ├─ Icons.jsx        # GithubIcon + LinkedinIcon (lucide v1 dropped brands)  (used)
 │     ├─ Section.jsx      # generic section wrapper — available, currently unused
 │     └─ Button.jsx       # generic button — available, currently unused
 ├─ context/MotionContext.jsx
 ├─ data/portfolio.js       # from Section 2.2
+├─ data/projects.js        # from Section 2.3 — one entry per project
 ├─ public/
 │  ├─ Md_Aman_Resume.pdf   # ← still needs to be added
-│  └─ images/              # aman.jpg, aman-2.jpg, aman-1.jpeg
+│  └─ images/              # portrait.jpg, aman-2.jpg
 ├─ flow.md
 ├─ Plan.md
 └─ TODO.md
@@ -369,9 +345,9 @@ Tone: confident, plain, first-person, no buzzword soup, no claims that aren't in
 Read Plan.md completely. Then:
 1. Scaffold the project exactly as in Section 4 (JavaScript, App Router, Tailwind, ESLint). Do not use TypeScript.
 2. Install only framer-motion and lucide-react.
-3. Create data/portfolio.js using the exact code in Section 2.2.
+3. Create data/portfolio.js using the exact code in Section 2.2 (and data/projects.js from Section 2.3).
 4. Create the folder structure from Section 4 with empty placeholder components that export a simple default function.
-5. Create TODO.md listing every "TODO" comment found in data/portfolio.js.
+5. Create TODO.md listing every "TODO" comment found in data/portfolio.js and data/projects.js.
 6. Run npm run lint and npm run build. Report results and stop.
 ```
 
@@ -400,22 +376,23 @@ Hero:
 - 4 CTAs: "Explore my work ↓" (smooth jump to #work), "Download resume ↗" (`download` attribute), "GitHub ↗", "LinkedIn ↗" (both in new tab with rel="noopener noreferrer").
 - Bottom status bar: "SCROLL TO DISCOVER ↓", student tag line, and interactive MOTION ON/OFF toggle.
 ImpactStrip:
-- 4 large numbers from Section 2.3 divided by hairline architectural grid lines with count-up animations on first view (Top 45, 2,768, 3, 2).
+- 4 large numbers from Section 2.4 divided by hairline architectural grid lines with count-up animations on first view (Top 45, 2,768, 3, 2).
 Compose both in app/page.js. Make it responsive 360px–1920px. Lint + build, then stop.
 ```
 
 ### Phase 3 — About + Education
 ```text
-Build components/About.jsx (id="about"): numbered eyebrow "01 / ABOUT", headline from about.headline with an italic accent, the paragraphs, the focus chips (Pill), and a compact education list from the `education` array (degree, institute, score, year) laid out as a clean responsive grid (not a heavy table on mobile). Optional circular/rounded photo slot that renders only if public/images/aman.jpg exists — otherwise a tasteful monogram "MA". Add to app/page.js. Lint + build, then stop.
+Build components/About.jsx (id="about"): numbered eyebrow "01 / ABOUT", headline from about.headline with an italic accent, the paragraphs, the focus chips (Pill), and a compact education list from the `education` array (degree, institute, score, year) laid out as a clean responsive grid (not a heavy table on mobile). Add to app/page.js. Lint + build, then stop.
 ```
 
 ### Phase 4 — Projects (cards + detail pages)
 ```text
 Build the Selected Work section and project pages.
-1. components/Projects.jsx (id="work"): eyebrow "02 / SELECTED WORK", headline from Plan.md Section 5, three numbered ProjectCards (01, 02, 03) from `projects`. Each card shows number, category, title, subtitle, summary, stack pills, and links: "Read the story" (-> /work/[slug]), GitHub, and Live (only if not null).
-2. app/work/page.js: lists all projects + a "More on GitHub" strip from `otherRepos`.
-3. app/work/[slug]/page.js: statically generated with generateStaticParams; includes generateMetadata per project; layout = title, subtitle, date, stack pills, overview, "What I built" bullet list (highlights), links, and Prev/Next project navigation. Call notFound() for unknown slugs.
-4. If a project has no screenshot, show a neat gradient placeholder card with the project number — do not use stock images.
+1. components/Projects.jsx (id="work"): eyebrow "02 / SELECTED WORK", headline from Plan.md Section 5, and a grid of numbered ProjectCards mapped from `projects` in data/projects.js. Each card shows number, category, title, subtitle, description, tag pills, and three footer actions: "Live" (external-link icon), "Code" (GitHub icon) and "Read the story" (-> /work/[id]). Both "Live" and "Code" always render — when the matching URL is null the button is rendered disabled (never a link to "#") — and both open in a new tab with rel="noopener noreferrer".
+2. app/work/page.js: lists all projects (reusing the same ProjectCard) + a "More on GitHub" strip from `otherRepos`.
+3. app/work/[slug]/page.js: statically generated with generateStaticParams; includes generateMetadata per project; layout = title, subtitle, date, tag pills, overview, "What I built" bullet list (highlights), Live + Code buttons, and Prev/Next project navigation. Call notFound() for unknown slugs. Read `params` inside <Suspense> so the static shell stays instant-navigable.
+4. If a project has no screenshot, show the generated gradient cover with the project number — do not use stock images.
+5. Ship three clearly-marked placeholder entries (E-commerce Dashboard, Realtime Chat App, AI Notes Assistant) with sample copy, generated gradient covers and a "Placeholder" badge.
 Hover: card lifts and the arrow nudges (disabled if motion OFF). Lint + build, then stop.
 ```
 
@@ -465,7 +442,7 @@ e) Blog or "Notes" section using MDX.
 Prepare for Vercel deployment:
 1. Make sure .gitignore is correct, no secrets in repo, `npm run build` passes with zero errors.
 2. Replace profile.siteUrl with the real Vercel URL (ask me for it), update metadataBase, sitemap and canonical.
-3. Write a README.md: what it is, tech stack, how to run (npm install, npm run dev), how to edit content (only data/portfolio.js), and how to deploy to Vercel.
+3. Write a README.md: what it is, tech stack, how to run (npm install, npm run dev), how to edit content (only data/portfolio.js and data/projects.js), and how to deploy to Vercel.
 4. Give me the exact git commands to push to a new GitHub repo and the steps to import it on vercel.com.
 ```
 
@@ -479,7 +456,7 @@ Prepare for Vercel deployment:
 4. **Phone number & email privacy** — I kept the phone off the website. Decide whether to show your college email or `mdaman13720@gmail.com` (from your GitHub README). College email may stop working after you graduate.
 5. **Instagram** (`amansaab_0` is on your GitHub README) — left out by default; add only if you want it public.
 6. **Certificate/credential URLs** and your **Google Cloud Skills profile URL** so the cards can link out.
-7. **A photo** (optional) → `public/images/aman.jpg`.
+7. **A photo** (optional) → `public/images/aman.jpg`. **Dropped** — the About section is now text-only.
 8. **Resume cleanups** I noticed while reading it:
    - "Delloite" → **Deloitte**
    - "Mongo DB" → **MongoDB**
@@ -492,7 +469,7 @@ Prepare for Vercel deployment:
 ## 8. Definition of Done / QA Checklist
 
 - [x] `npm run lint` and `npm run build` pass with zero errors/warnings that matter
-- [x] All content is read from `data/portfolio.js` (no hard-coded copy in components)
+- [x] All content is read from `data/portfolio.js` and `data/projects.js` (no hard-coded copy in components)
 - [x] No TypeScript files anywhere
 - [x] Every link works; external links use `rel="noopener noreferrer"`
 - [ ] Resume downloads correctly from `/Md_Aman_Resume.pdf` — **PDF not yet added to `public/`**; the section degrades gracefully until it is
@@ -515,5 +492,5 @@ If your agent handles long tasks well, paste this instead of the phased prompts:
 
 ```text
 You are a senior front-end engineer. Read Plan.md in full and build the complete portfolio for Md Aman using Next.js (App Router) and JavaScript only (no TypeScript), Tailwind CSS, Framer Motion and lucide-react.
-Follow Section 1 hard rules, create data/portfolio.js exactly as in Section 2.2, emulate the editorial dark design language from Section 3 (do not copy the reference site's text, images or code), use the structure in Section 4, and implement every section of the page map. Never invent facts; use placeholders and TODO.md for anything missing. Work phase by phase (Phases 0–7 in Section 6), run lint and build after each, and give me a short summary plus a list of open items from Section 7 at the end.
+Follow Section 1 hard rules, create data/portfolio.js exactly as in Section 2.2 and data/projects.js as in Section 2.3, emulate the editorial dark design language from Section 3 (do not copy the reference site's text, images or code), use the structure in Section 4, and implement every section of the page map. Never invent facts; use placeholders and TODO.md for anything missing. Work phase by phase (Phases 0–7 in Section 6), run lint and build after each, and give me a short summary plus a list of open items from Section 7 at the end.
 ```

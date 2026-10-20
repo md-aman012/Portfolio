@@ -51,61 +51,7 @@ export const skills = {
   Coursework: ["DBMS", "OOPS", "Operating Systems", "DSA", "Computer Networks", "AI", "ML"],
 };
 
-export const projects = [
-  {
-    slug: "brand-ai-readiness-audit",
-    title: "Brand AI-Readiness Audit",
-    subtitle: "Agent Skill Marketplace",
-    date: "Sep 2026",
-    category: "AI tooling · Python",
-    summary:
-      "A modular system that audits websites for AI discoverability, content quality and user engagement, and outputs evidence-backed reports.",
-    highlights: [
-      "Built a modular system to audit websites for AI discoverability, content quality and user engagement.",
-      "Implemented web crawling, structured-data validation and automated issue detection.",
-      "Generated evidence-backed JSON reports with severity rankings and prioritized recommendations.",
-      "Implemented page-type-aware checks, finding deduplication, report validation and read-only website auditing.",
-    ],
-    stack: ["Python", "Web Crawling", "JSON", "Schema.org", "Playwright"],
-    github: "https://github.com/md-aman012", // TODO: replace with exact repo URL
-    live: null,
-  },
-  {
-    slug: "distributed-file-storage",
-    title: "Distributed File Storage System",
-    subtitle: "Secure full-stack file platform",
-    date: "Sep 2026",
-    category: "Full-stack · Cloud",
-    summary:
-      "A secure file storage platform with authenticated upload, download, sharing and deletion, backed by AWS S3 and PostgreSQL.",
-    highlights: [
-      "Developed a secure full-stack file storage platform supporting authenticated upload, download, sharing and deletion of user files.",
-      "Implemented JWT authentication and bcrypt password hashing with protected REST APIs.",
-      "Integrated AWS S3 and Multer-S3 for direct file streaming, user-isolated storage, MIME validation and 50 MB file-size enforcement.",
-      "Designed PostgreSQL-backed file metadata management with S3 presigned URLs for secure, time-limited downloads.",
-    ],
-    stack: ["React.js", "Node.js", "Express.js", "PostgreSQL", "AWS S3", "JWT", "Multer"],
-    github: "https://github.com/md-aman012", // TODO: exact repo URL
-    live: null, // TODO: live demo URL if deployed
-  },
-  {
-    slug: "civicbridge",
-    title: "CivicBridge",
-    subtitle: "Transparent Community–Government Feedback Platform",
-    date: "Feb 2026",
-    category: "Full-stack · Civic tech",
-    summary:
-      "A platform where residents report civic issues with images and precise location, and the community upvotes and discusses what matters most.",
-    highlights: [
-      "Developed a full-stack platform enabling residents to report civic issues with images and precise location tracking.",
-      "Built interactive features allowing users to upvote, comment and highlight trending community issues.",
-      "Incorporated mapping services (Leaflet/Mapbox) to visualize issue locations and identify geographic patterns.",
-    ],
-    stack: ["React.js", "Tailwind CSS", "Node.js", "Express.js", "MongoDB", "JWT", "Cloudinary", "Leaflet/Mapbox"],
-    github: "https://github.com/md-aman012/CivicBridge_Team_Matrix", // fork of a team repo — confirm this is the right link
-    live: null,
-  },
-];
+// Projects live in their own file — see data/projects.js.
 
 // Other public repos visible on GitHub (optional "More on GitHub" strip)
 export const otherRepos = [

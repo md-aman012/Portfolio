@@ -9,7 +9,7 @@ export default function MotionToggle() {
     <button
       onClick={toggleMotion}
       aria-label={motionEnabled ? "Turn motion off" : "Turn motion on"}
-      className="text-xs font-mono tracking-widest uppercase px-3 py-1.5 rounded-full transition-all duration-200 border cursor-pointer"
+      className="h-8 text-xs font-mono tracking-widest uppercase px-4 rounded-full transition-all duration-200 border cursor-pointer inline-flex items-center"
       style={{
         color: motionEnabled ? "var(--accent)" : "var(--text-muted)",
         borderColor: motionEnabled ? "var(--accent)" : "var(--border)",

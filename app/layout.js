@@ -86,9 +86,9 @@ export default function RootLayout({ children }) {
     >
       <body>
         <noscript>
-          {/* Reveal wrappers are server-rendered with opacity: 0 so they can
-              fade in on scroll. Without JS that animation never runs. */}
-          <style>{`[data-reveal]{opacity:1 !important;transform:none !important}`}</style>
+          {/* Reveal wrappers animate in on scroll, but their resting state is
+              already visible — this is just a safety net for the animation. */}
+          <style>{`[data-reveal]{opacity:1 !important;transform:none !important;filter:none !important}`}</style>
         </noscript>
         <MotionProvider>
           <SkipLink />

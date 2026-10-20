@@ -1,17 +1,25 @@
 # TODO — Items to confirm before launch
 
-These are extracted from `data/portfolio.js` TODO comments:
+These are extracted from the `TODO` comments in `data/portfolio.js` and `data/projects.js`:
 
 ## Identity & Links
 - [ ] **Confirm preferred public email** — currently `mdamd.ug24.cs@nitp.ac.in` (profile.email)
 - [ ] **Replace siteUrl** — currently `https://TODO-your-domain.vercel.app` (profile.siteUrl) — update after Vercel deploy. This drives `metadataBase`, canonical, OG URLs, sitemap, robots, and the JSON-LD `Person` schema.
 
-## Projects
-- [ ] **Brand AI-Readiness Audit** — replace GitHub link with exact repo URL (currently points to profile)
-- [ ] **Distributed File Storage** — replace GitHub link with exact repo URL (currently points to profile)
-- [ ] **Distributed File Storage** — add live demo URL if deployed
+## Projects — real work (`data/projects.js`)
+- [ ] **Brand AI-Readiness Audit** — replace `repoUrl` with the exact repo URL (currently points to the profile)
+- [ ] **Brand AI-Readiness Audit** — add `liveUrl` if deployed
+- [ ] **Distributed File Storage** — replace `repoUrl` with the exact repo URL (currently points to the profile)
+- [ ] **Distributed File Storage** — add `liveUrl` if deployed
 - [ ] **CivicBridge** — confirm the fork link `https://github.com/md-aman012/CivicBridge_Team_Matrix` is the correct one
-- [ ] **Project screenshots** — the detail pages show a numbered placeholder until a `public/images/<slug>.jpg` exists
+- [ ] **CivicBridge** — add `liveUrl` if deployed
+- [ ] **Project screenshots** — the detail pages show the generated gradient cover until `screenshot` points at a real image in `public/images/`
+
+## Projects — placeholders to replace
+These three entries are **sample content** so the grid shows its full shape. Each carries a `// TODO: replace with a real project` comment in `data/projects.js` and renders a "Placeholder" badge on the card. Swap them for real work, or delete the entry.
+- [ ] **Demo Project One – E-commerce Dashboard** (Next.js, Tailwind, MongoDB) — replace title, description, highlights, tags, `liveUrl` and `repoUrl`
+- [ ] **Demo Project Two – Realtime Chat App** (React, Node.js, Socket.io) — replace title, description, highlights, tags, `liveUrl` and `repoUrl`
+- [ ] **Demo Project Three – AI Notes Assistant** (Next.js, OpenAI API, PostgreSQL) — replace title, description, highlights, tags, `liveUrl` and `repoUrl`
 
 ## Education
 - [ ] **Graduation year** — resume says "june 2026" but batch is UG24, so likely 2028. Currently set to "Expected 2028" — confirm or fix
@@ -24,7 +32,6 @@ These are extracted from `data/portfolio.js` TODO comments:
 
 ## Assets
 - [ ] **Resume PDF** — drop `Md_Aman_Resume.pdf` into `public/`. Until it exists the Resume section shows a "being finalised" note instead of a broken preview frame, and the download button is hidden.
-- [ ] **Photo** — `public/images/aman.jpg` is already in place and renders in the About section
 
 ## Optional
 - [ ] **Instagram** — `https://instagram.com/amansaab_0` — uncomment in socials only if Aman wants it public

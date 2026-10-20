@@ -38,6 +38,12 @@ export function MotionProvider({ children }) {
     getMotionServerSnapshot
   );
 
+  // Mirror the preference onto <html data-motion> so CSS can switch every
+  // animation and transition off in one place.
+  useEffect(() => {
+    document.documentElement.dataset.motion = motionEnabled ? "on" : "off";
+  }, [motionEnabled]);
+
   // Initialize from localStorage on mount
   useEffect(() => {
     motionState = getInitialMotionPreference();

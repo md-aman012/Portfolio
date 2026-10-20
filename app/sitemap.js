@@ -1,4 +1,5 @@
-import { projects, profile } from "@/data/portfolio";
+import { projects } from "@/data/projects";
+import { profile } from "@/data/portfolio";
 
 export default function sitemap() {
   const base = profile.siteUrl.replace(/\/$/, "");

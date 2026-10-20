@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { stats } from "@/data/portfolio";
-import { useMotion } from "@/context/MotionContext";
-import { useInView, animate } from "framer-motion";
+import { useMotion } from "@/context/MotionContext"; 
+import { useRevealOnce } from "@/components/ui/useReveal";
+import { animate } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 
-function MetricColumn({ stat, motionEnabled, isLast }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-40px" });
+function MetricColumn({ stat, motionEnabled, isLast, index }) {
+  const [ref, revealed] = useRevealOnce({ enabled: motionEnabled });
   const [animatedValue, setAnimatedValue] = useState(
     stat.numericTarget !== undefined ? `${stat.prefix || ""}0` : stat.value
   );
 
   useEffect(() => {
-    if (!motionEnabled || stat.numericTarget === undefined || !isInView) {
+    if (!motionEnabled || stat.numericTarget === undefined || !revealed) {
       return;
     }
 
@@ -29,7 +29,7 @@ function MetricColumn({ stat, motionEnabled, isLast }) {
     });
 
     return () => controls.stop();
-  }, [isInView, motionEnabled, stat.numericTarget, stat.prefix]);
+  }, [revealed, motionEnabled, stat.numericTarget, stat.prefix]);
 
   const displayValue = !motionEnabled || stat.numericTarget === undefined
     ? stat.value
@@ -39,8 +39,11 @@ function MetricColumn({ stat, motionEnabled, isLast }) {
     <div
       ref={ref}
       className={`p-6 sm:p-8 lg:p-10 flex flex-col justify-between transition-colors duration-300 hover:bg-[#0f0f0f] ${
+        revealed ? "reveal-play" : ""
+      } ${
         !isLast ? "border-b lg:border-b-0 lg:border-r border-[var(--border)]" : ""
       }`}
+      style={{ "--reveal-delay": `${index * 90}ms` }}
     >
       <div>
         <span
@@ -72,7 +75,7 @@ export default function ImpactStrip() {
       style={{ backgroundColor: "var(--bg-surface)" }}
       aria-label="Verified impact metrics"
     >
-      <div className="container-main px-0 sm:px-4 lg:px-8">
+      <div className="container-main">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-x-0 sm:border-x border-[var(--border)]">
           {stats.map((stat, idx) => (
             <MetricColumn
@@ -80,6 +83,7 @@ export default function ImpactStrip() {
               stat={stat}
               motionEnabled={motionEnabled}
               isLast={idx === stats.length - 1}
+              index={idx}
             />
           ))}
         </div>

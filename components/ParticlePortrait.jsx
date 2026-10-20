@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import * as THREE from "three";
-import { gsap } from "gsap";
 import { useMotion } from "@/context/MotionContext";
 
 const vertexShader = `
@@ -41,7 +40,7 @@ const vertexShader = `
       pos.z += sin(t * 0.65) * 0.15;
     }
 
-    // Coordinated load entrance: particles disperse in 3D and assemble smoothly
+    // Scroll-driven dispersal: uProgress 1.0 = fully formed, 0.0 = fully dispersed
     if (uProgress < 1.0) {
       float p = clamp(uProgress, 0.0, 1.0);
       float ease = 1.0 - pow(1.0 - p, 3.0);
@@ -77,6 +76,7 @@ const vertexShader = `
 
 const fragmentShader = `
   uniform float uAmberGlow;
+  uniform float uFade;
   varying vec3 vColor;
   varying float vAlpha;
   varying float vType;
@@ -89,7 +89,7 @@ const fragmentShader = `
 
     // Crisp stardust particle with soft antialiased edge
     float core = smoothstep(0.5, 0.08, dist);
-    float alpha = core * vAlpha;
+    float alpha = core * vAlpha * uFade;
 
     vec3 finalColor = vColor;
 
@@ -97,8 +97,10 @@ const fragmentShader = `
     if (vType > 0.5) {
       float corona = exp(-dist * 4.0) * 0.35 * uAmberGlow;
       finalColor += vec3(0.35, 0.14, 0.02) * corona;
-      alpha = max(alpha, corona * vAlpha);
+      alpha = max(alpha, corona * vAlpha * uFade);
     }
+
+    if (alpha < 0.004) discard;
 
     gl_FragColor = vec4(finalColor, alpha);
   }
@@ -116,10 +118,35 @@ function checkWebGLSupport() {
   }
 }
 
-export default function ParticlePortrait({
-  className = "",
-  onLoaded,
-}) {
+// Keep a deterministic random subset of the particles. Selection is pseudo-random
+// rather than a scan-order stride, which would produce visible banding.
+function thinParticles(positions, colors, sizes, alphas, types, randoms, count, ratio) {
+  const out = {
+    positions: [],
+    colors: [],
+    sizes: [],
+    alphas: [],
+    types: [],
+    randoms: [],
+    count: 0,
+  };
+  let seed = 0x9e3779b9;
+  for (let i = 0; i < count; i++) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    if ((seed >>> 8) / 16777216 >= ratio) continue;
+    const p3 = i * 3;
+    out.positions.push(positions[p3], positions[p3 + 1], positions[p3 + 2]);
+    out.colors.push(colors[p3], colors[p3 + 1], colors[p3 + 2]);
+    out.sizes.push(sizes[i]);
+    out.alphas.push(alphas[i]);
+    out.types.push(types[i]);
+    out.randoms.push(randoms[p3], randoms[p3 + 1], randoms[p3 + 2]);
+    out.count++;
+  }
+  return out;
+}
+
+export default function ParticlePortrait({ className = "", onLoaded }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const { motionEnabled } = useMotion();
@@ -131,7 +158,13 @@ export default function ParticlePortrait({
     if (!containerRef.current || !canvasRef.current || !webglSupported) return;
 
     let isDisposed = false;
-    let animationFrameId = null;
+    let frameId = null;
+    let isVisible = true;
+
+    // Scroll-driven state. `target` is the raw scroll progress (0 at the top of
+    // the hero, 1 once the hero has scrolled out); `current` is the smoothed
+    // value actually fed to the shaders. Neither touches React state.
+    const scroll = { target: 0, current: 0 };
 
     // Three.js scene setup
     const container = containerRef.current;
@@ -167,7 +200,9 @@ export default function ParticlePortrait({
     // Uniforms for shaders
     const uniforms = {
       uTime: { value: 0.0 },
-      uProgress: { value: 0.0 },
+      // 1.0 = fully formed and sharp, 0.0 = fully dispersed
+      uProgress: { value: 1.0 },
+      uFade: { value: 1.0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
       uPixelRatio: { value: pixelRatio },
       uAmberGlow: { value: 1.0 },
@@ -194,30 +229,37 @@ export default function ParticlePortrait({
     const setupGeometry = (positions, colors, sizes, alphas, types, randoms, count) => {
       if (isDisposed) return;
 
+      // Mobile GPUs render a thinned particle set to stay inside the frame budget.
+      const ratio = width < 768 ? 0.55 : 1;
+      const data =
+        ratio < 1
+          ? thinParticles(positions, colors, sizes, alphas, types, randoms, count, ratio)
+          : { positions, colors, sizes, alphas, types, randoms, count };
+
       particleGeometry = new THREE.BufferGeometry();
       particleGeometry.setAttribute(
         "position",
-        new THREE.BufferAttribute(new Float32Array(positions), 3)
+        new THREE.BufferAttribute(new Float32Array(data.positions), 3)
       );
       particleGeometry.setAttribute(
         "color",
-        new THREE.BufferAttribute(new Float32Array(colors), 3)
+        new THREE.BufferAttribute(new Float32Array(data.colors), 3)
       );
       particleGeometry.setAttribute(
         "aSize",
-        new THREE.BufferAttribute(new Float32Array(sizes), 1)
+        new THREE.BufferAttribute(new Float32Array(data.sizes), 1)
       );
       particleGeometry.setAttribute(
         "aAlpha",
-        new THREE.BufferAttribute(new Float32Array(alphas), 1)
+        new THREE.BufferAttribute(new Float32Array(data.alphas), 1)
       );
       particleGeometry.setAttribute(
         "aType",
-        new THREE.BufferAttribute(new Float32Array(types), 1)
+        new THREE.BufferAttribute(new Float32Array(data.types), 1)
       );
       particleGeometry.setAttribute(
         "aRandom",
-        new THREE.BufferAttribute(new Float32Array(randoms), 3)
+        new THREE.BufferAttribute(new Float32Array(data.randoms), 3)
       );
 
       pointsMesh = new THREE.Points(particleGeometry, material);
@@ -225,18 +267,6 @@ export default function ParticlePortrait({
 
       setDataReady(true);
       if (onLoaded) onLoaded();
-
-      // Entrance animation with GSAP
-      if (motionEnabled) {
-        gsap.to(uniforms.uProgress, {
-          value: 1.0,
-          duration: 2.2,
-          ease: "power2.out",
-          delay: 0.15,
-        });
-      } else {
-        uniforms.uProgress.value = 1.0;
-      }
     };
 
     // Load precomputed binary particle dataset with fallback to JSON and runtime sampling
@@ -407,6 +437,27 @@ export default function ParticlePortrait({
 
     loadParticleData();
 
+    // ---- Scroll-driven progress -------------------------------------------
+    // The hero's offset and height are measured once per layout change so the
+    // scroll handler never has to read a layout property (no thrashing).
+    let heroTop = 0;
+    let heroHeight = 1;
+
+    const measure = () => {
+      const rect = container.getBoundingClientRect();
+      heroTop = rect.top + window.scrollY;
+      heroHeight = rect.height || 1;
+    };
+
+    const handleScroll = () => {
+      const scrolled = window.scrollY - heroTop;
+      scroll.target = Math.min(1, Math.max(0, scrolled / heroHeight));
+    };
+
+    measure();
+    handleScroll();
+    scroll.current = scroll.target;
+
     // Mouse move handler
     const handleMouseMove = (e) => {
       if (!motionEnabled) return;
@@ -424,6 +475,7 @@ export default function ParticlePortrait({
 
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     window.addEventListener("mouseleave", handleMouseLeave, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     // Resize handler
     const handleResize = () => {
@@ -440,6 +492,9 @@ export default function ParticlePortrait({
       renderer.setPixelRatio(newPixelRatio);
       renderer.setSize(width, height);
       uniforms.uPixelRatio.value = newPixelRatio;
+
+      measure();
+      handleScroll();
     };
 
     window.addEventListener("resize", handleResize, { passive: true });
@@ -454,12 +509,13 @@ export default function ParticlePortrait({
       false
     );
 
-    // Animation Loop
+    // Animation Loop — paused entirely while the hero is off screen.
     let lastTime = performance.now();
 
     const animate = (now) => {
       if (isDisposed) return;
-      animationFrameId = requestAnimationFrame(animate);
+      frameId = null;
+      if (!isVisible) return;
 
       const delta = Math.min((now - lastTime) * 0.001, 0.1);
       lastTime = now;
@@ -472,25 +528,59 @@ export default function ParticlePortrait({
         currentMouse.y += (targetMouse.y - currentMouse.y) * 0.055;
         uniforms.uMouse.value.set(currentMouse.x, currentMouse.y);
 
-        // Subtle restrained mesh tilt (within ~3 degrees)
+        // Scroll damping — the portrait eases toward the scroll position so
+        // scrubbing up and down reverses smoothly.
+        scroll.current += (scroll.target - scroll.current) * 0.09;
+        const p = scroll.current;
+
+        // 0 = fully formed, 1 = fully dispersed
+        uniforms.uProgress.value = 1 - p;
+        uniforms.uFade.value = 1 - p * 0.9;
+
         if (pointsMesh) {
+          // Slight scale-down and a lagging vertical shift: the portrait drifts
+          // against the scroll direction.
+          pointsMesh.scale.setScalar(1 - p * 0.16);
+          pointsMesh.position.y = -p * 0.26;
+          // Subtle restrained mesh tilt (within ~3 degrees)
           pointsMesh.rotation.y = currentMouse.x * 0.045;
           pointsMesh.rotation.x = -currentMouse.y * 0.035;
         }
       }
 
       renderer.render(scene, camera);
+      frameId = requestAnimationFrame(animate);
     };
 
-    animationFrameId = requestAnimationFrame(animate);
+    // Only burn frames while the hero is actually on screen.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        isVisible = entry.isIntersecting;
+        if (isVisible && frameId === null && !isDisposed) {
+          lastTime = performance.now();
+          frameId = requestAnimationFrame(animate);
+        } else if (!isVisible && frameId !== null) {
+          cancelAnimationFrame(frameId);
+          frameId = null;
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(container);
+
+    frameId = requestAnimationFrame(animate);
 
     // Cleanup
     return () => {
       isDisposed = true;
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (frameId) cancelAnimationFrame(frameId);
+
+      observer.disconnect();
 
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
 
       if (particleGeometry) particleGeometry.dispose();
@@ -510,9 +600,9 @@ export default function ParticlePortrait({
         ref={canvasRef}
         className="absolute inset-0 w-full h-full block"
         style={{
-          opacity: webglSupported && dataReady ? 1 : 0,
+          opacity: webglSupported && motionEnabled && dataReady ? 1 : 0,
           transition: "opacity 0.8s ease-out",
-          display: webglSupported ? "block" : "none",
+          display: webglSupported && motionEnabled ? "block" : "none",
         }}
       />
 
