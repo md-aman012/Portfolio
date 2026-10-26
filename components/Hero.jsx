@@ -1,425 +1,198 @@
 "use client";
 
-import { Fragment, useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { gsap } from "gsap";
 import { useMotion } from "@/context/MotionContext";
-import { profile, socials } from "@/data/portfolio";
-import { ArrowDown, ArrowUpRight, Download } from "lucide-react";
-import { GithubIcon, LinkedinIcon } from "@/components/ui/Icons";
+import { profile } from "@/data/portfolio";
 
-// Dynamically import particle portrait so it never reaches the browser on the server
 const ParticlePortrait = dynamic(() => import("./ParticlePortrait"), {
   ssr: false,
 });
 
-// Layout effect on the client only — avoids React's SSR warning while still
-// letting us hide the hero type before the first paint.
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+const CAPTION_TEXT = "A human perspective on technology";
+const GLYPHS = "01/-.\\_";
 
 export default function Hero() {
-  const { motionEnabled } = useMotion();
+  const { motionEnabled, toggleMotion } = useMotion();
 
-  const heroRef = useRef(null);
-  const nameContainerRef = useRef(null); // the <h1> — scoping target for entrance animation
-  const eyebrowRef = useRef(null);
-  const introRef = useRef(null);
-  const actionsRef = useRef(null);
-  const bottomRef = useRef(null);
-  // One-time flags: guarantee the entrance plays exactly once per page load and
-  // never re-triggers on scroll, re-entry, resize, hover, or React re-renders.
-  const startedRef = useRef(false);
-  const timelineRef = useRef(null);
+  const dissolveRef = useRef(0);
+  const txtRef = useRef(null);
+  const capRef = useRef(null);
 
-  // Entrance animation. Runs once after fonts are ready; skipped entirely when
-  // motion is OFF (system preference or manual toggle).
-  useIsomorphicLayoutEffect(() => {
-    if (!motionEnabled || startedRef.current) return;
+  // Scramble glitch on the kicker text while the portrait dissolves
+  useEffect(() => {
+    if (!motionEnabled) return;
+    const el = capRef.current;
+    const txt = txtRef.current;
+    if (!el) return;
 
-    const nameEl = nameContainerRef.current;
-    if (!nameEl) return;
+    let scrambled = false;
+    const interval = setInterval(() => {
+      const p = dissolveRef.current;
 
-    // All animatable elements must be present (no hydration race).
-    if (
-      ![eyebrowRef.current, introRef.current, actionsRef.current, bottomRef.current].every(
-        Boolean
-      )
-    ) {
-      return;
-    }
-
-    const letters = nameEl.querySelectorAll("[data-letter]");
-    const animated = [
-      ...letters,
-      eyebrowRef.current,
-      introRef.current,
-      actionsRef.current,
-      bottomRef.current,
-    ];
-
-    // Hide before the browser paints, so the resting state is never shown
-    // before the entrance (no flash).
-    if (letters.length) {
-      gsap.set(letters, { y: -30, opacity: 0, filter: "blur(12px)" });
-    }
-    gsap.set([eyebrowRef.current, introRef.current], { y: 16, opacity: 0 });
-    gsap.set(actionsRef.current, { y: 10, opacity: 0 });
-    gsap.set(bottomRef.current, { opacity: 0 });
-
-    // Wait for web fonts so the per-letter stagger reads naturally and the
-    // glyphs never reflow mid-animation.
-    const fontsReady =
-      typeof document !== "undefined" && document.fonts && document.fonts.ready;
-
-    const start = () => {
-      // Guard against a second start (StrictMode mounts the effect twice).
-      if (startedRef.current) return;
-      startedRef.current = true;
-
-      const timeline = gsap.timeline({
-        onComplete: () => {
-          // Strip every style GSAP wrote so the heading ends fully static —
-          // no leftover transform, opacity or filter.
-          gsap.set(animated, { clearProps: "transform,opacity,filter" });
-          timelineRef.current = null;
-        },
-      });
-      timelineRef.current = timeline;
-
-      // Per-letter staggered entrance: fade + slide up + blur-to-sharp.
-      if (letters.length) {
-        timeline.fromTo(
-          letters,
-          { y: -30, opacity: 0, filter: "blur(12px)" },
-          { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.62, stagger: 0.055 },
-          0
-        );
+      // Gentle translateY lift on the text as you dissolve
+      if (txt) {
+        txt.style.transform = `translateY(${(-p * 24).toFixed(1)}px)`;
       }
-      // Supporting rows land after the headline settles.
-      timeline.fromTo(
-        [eyebrowRef.current, introRef.current],
-        { y: 16, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.55 },
-        1.05
-      );
-      timeline.fromTo(
-        actionsRef.current,
-        { y: 10, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.5 },
-        1.3
-      );
-      timeline.fromTo(
-        bottomRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.5 },
-        1.55
-      );
-    };
 
-    if (fontsReady) {
-      fontsReady.then(start);
-    } else {
-      start();
-    }
+      // Smoothstep for glitch intensity
+      const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+      const ss = (a, b, x) => {
+        x = clamp((x - a) / (b - a), 0, 1);
+        return x * x * (3 - 2 * x);
+      };
+
+      const q = ss(0.02, 0.4, p) * 0.55;
+      if (q > 0.005) {
+        scrambled = true;
+        el.textContent = Array.from(CAPTION_TEXT)
+          .map((ch) =>
+            ch === " " || Math.random() >= q
+              ? ch
+              : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
+          )
+          .join("");
+      } else if (scrambled) {
+        scrambled = false;
+        el.textContent = CAPTION_TEXT;
+      }
+    }, 45);
 
     return () => {
-      if (timelineRef.current) {
-        timelineRef.current.kill();
-        timelineRef.current = null;
-      }
-      // Restore the resting state on unmount.
-      gsap.set(animated, { clearProps: "transform,opacity,filter" });
+      clearInterval(interval);
+      el.textContent = CAPTION_TEXT;
+      if (txt) txt.style.transform = "none";
     };
   }, [motionEnabled]);
 
-  const github =
-    socials.find((s) => s.label === "GitHub")?.href ?? "https://github.com/md-aman012";
-  const linkedin =
-    socials.find(
-      (s) => s.label === "LinkedIn"
-    )?.href ?? "https://www.linkedin.com/in/md-aman-76000a324/";
-
-  // Render the name as individual letter spans so the entrance can stagger per-letter.
-  const nameWords = ["Md", "Aman"];
+  // Split profile name for serif italic formatting: "Md" normal, "Aman" italic
+  const parts = (profile.name || "Md Aman").trim().split(/\s+/);
+  const lastWord = parts.pop();
+  const firstWords = parts.join(" ");
 
   return (
-    <section
-      ref={heroRef}
-      id="hero"
-      className="relative flex flex-col justify-between min-h-[100svh] pt-[calc(var(--nav-height)+0.5rem)] pb-6 sm:pb-8 overflow-hidden select-none bg-[#030303]"
-      style={{ borderBottom: "1px solid var(--border)" }}
-    >
-      {/* Real-time 3D Cinematic Particle Portrait */}
-      <ParticlePortrait />
+    <header className="track relative h-[125svh] select-none" id="hero">
+      <div className="stage sticky top-0 h-[100svh] overflow-hidden bg-black">
+        {/* Real-time fluid stardust dissolve canvas */}
+        <ParticlePortrait progressRef={dissolveRef} />
 
-      {/* Architectural Background Grid Lines (bottom-faded to blend into surface) */}
-      <div
-        aria-hidden="true"
-        className="pointer-none absolute inset-0 z-0 opacity-20"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-          backgroundSize: "20% 100%",
-          maskImage:
-            "linear-gradient(to bottom, black 30%, transparent 92%)",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, black 30%, transparent 92%)",
-        }}
-      />
+        {/* Top Edge Left */}
+        <div
+          className="edge l mono absolute z-10 left-7 font-mono text-[10px] tracking-[0.14em] uppercase text-[#8a8a8a] select-none"
+          style={{ top: "calc(84px + env(safe-area-inset-top, 0px))" }}
+        >
+          <span
+            className="dot inline-block w-[5px] h-[5px] bg-[#e8704f] mr-2 align-middle"
+            aria-hidden="true"
+          />
+          Engineer. Educator. Builder.
+        </div>
 
-      {/* Subtle warm amber glow centered behind character/shoulders */}
-      <div
-        aria-hidden="true"
-        className="pointer-none absolute inset-0 z-0 transition-opacity duration-1000"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 22%, rgba(255, 140, 89, 0.12), rgba(255, 140, 89, 0.03) 38%, transparent 70%)",
-        }}
-      />
+        {/* Top Edge Right */}
+        <div
+          className="edge r mono hidden sm:block absolute z-10 right-7 font-mono text-[10px] tracking-[0.14em] uppercase text-[#8a8a8a] select-none"
+          style={{ top: "calc(84px + env(safe-area-inset-top, 0px))" }}
+        >
+          Based in India · Thinking beyond
+        </div>
 
-      {/* Top Architectural Status Header Row — shares the page gutter */}
-      <div className="container-main w-full relative z-10">
-        <div className="flex flex-wrap items-center justify-between gap-4 py-2 border-b border-[var(--border)]">
-          <div className="flex items-center gap-2.5 tracking-label text-[9px] sm:text-[10px]">
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
+        {/* Left Rail: 01 / PRESENCE */}
+        <div className="rail mono hidden md:block absolute z-10 left-7 top-[30svh] font-mono text-[10px] tracking-[0.14em] uppercase text-[#8a8a8a] leading-[1.6] select-none">
+          <b className="block text-[#e8704f] font-normal mb-3.5">01 / Presence</b>
+          <div className="plus text-[#e8704f] text-base mb-2 font-normal">+</div>
+          Engineering
+          <br />
+          Education
+          <br />
+          Human connection
+        </div>
+
+        {/* Main Center Typography */}
+        <div
+          ref={txtRef}
+          className="txt absolute z-10 inset-x-0 top-[43svh] flex flex-col items-center text-center px-4 pointer-events-none transition-transform duration-75"
+        >
+          {/* Scramble kicker */}
+          <div
+            ref={capRef}
+            className="mono font-mono text-[10px] sm:text-xs tracking-[0.14em] uppercase text-[#bdb8b0]"
+          >
+            {CAPTION_TEXT}
+          </div>
+
+          {/* Heading */}
+          <h1
+            className="font-serif text-[clamp(48px,min(13vw,17svh),168px)] leading-[0.95] tracking-[-0.035em] mt-2.5 text-[#f2efea]"
+          >
+            {firstWords ? `${firstWords} ` : ""}
+            <em className="italic">{lastWord}</em>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="sub mt-[clamp(10px,2.4svh,24px)] text-[#cfcac2] max-w-[34ch] text-xs sm:text-sm md:text-base leading-relaxed">
+            I build products, teach developers, and help education businesses grow.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="cta flex items-center gap-5 sm:gap-6 mt-[clamp(12px,2.4svh,22px)] pointer-events-auto">
+            <a
+              href="#work"
+              className="pill inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-[13px] font-medium text-[#f2efea] transition-all duration-200"
               style={{
-                backgroundColor: "var(--accent)",
-                boxShadow: "0 0 8px var(--accent)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backgroundColor: "rgba(255, 255, 255, 0.07)",
               }}
-              aria-hidden="true"
-            />
-            <span className="font-mono text-[var(--text-muted)]">
-              B.TECH CSE · NIT PATNA · FULL-STACK DEVELOPER
-            </span>
-          </div>
-          <div className="tracking-label text-[10px] hidden sm:block font-mono text-[var(--text-muted)] opacity-80">
-            BASED IN INDIA · THINKING BEYOND
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.14)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.22)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.07)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+              }}
+            >
+              Explore my work ↓
+            </a>
+            <a
+              href="#contact"
+              className="link text-[#f2efea] text-xs sm:text-[13px] border-b border-[#8a8a8a] pb-0.5 hover:border-white transition-colors"
+            >
+              Start a conversation ↗
+            </a>
           </div>
         </div>
-      </div>
 
-      {/* Main Center Stage: Layered Oversized Typography Over Particle Portrait */}
-      <div
-        className="relative z-10 mt-auto mb-6 sm:mb-10 pt-4 pb-2 flex flex-col items-center text-center max-w-5xl mx-auto px-6 pointer-events-none"
-      >
-        {/* Letters of the name — staggered entrance (no transforms left after animation) */}
-        <h1
-          ref={nameContainerRef}
-          className="hero-heading font-serif tracking-tight leading-[0.9] my-1 sm:my-2 select-text"
-          style={{
-            color: "#F1EEE8",
-            textShadow:
-              "0 6px 40px rgba(0,0,0,0.85), 0 2px 15px rgba(0,0,0,0.95)",
-          }}
-        >
-          {nameWords.map((word, wi) => (
-            <Fragment key={wi}>
-              {wi > 0 ? " " : null}
-              <span
-                className={wi === 1 ? "accent-italic" : undefined}
-                // Optical spacing for the italic word (reference: .hero h1 em{margin-left:.035em})
-                style={wi === 1 ? { marginLeft: "0.035em" } : undefined}
-              >
-                {Array.from(word).map((ch, ci) => (
-                  <span data-letter key={ci}>{ch}</span>
-                ))}
-              </span>
-            </Fragment>
-          ))}
-        </h1>
-
-        {/* Refined Kicker below the name */}
-        <p
-          ref={eyebrowRef}
-          className="tracking-label text-[10px] sm:text-xs mt-3 sm:mt-4 mb-1.5"
-          style={{
-            textShadow: "0 2px 10px rgba(0, 0, 0, 0.8)",
-          }}
-        >
-          A DEVELOPER BUILDING THINGS FOR THE WEB
-        </p>
-
-        {/* Short introduction paragraph */}
-        <p
-          ref={introRef}
-          className="text-sm sm:text-base md:text-lg lg:text-xl max-w-xl mx-auto mt-2 sm:mt-3 leading-relaxed font-normal text-[var(--text-muted)]"
-          style={{
-            textShadow: "0 2px 12px rgba(0,0,0,0.9)",
-          }}
-        >
-          I build thoughtful digital experiences with code, creativity, and curiosity.
-        </p>
-
-        {/* Calls to Action: Understated, elegant buttons */}
+        {/* Bottom Bar */}
         <div
-          ref={actionsRef}
-          className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-3.5 sm:gap-5 pointer-events-auto"
+          className="bar mono absolute z-10 left-7 right-7 flex justify-between gap-3 font-mono text-[10px] tracking-[0.14em] uppercase text-[#8a8a8a]"
+          style={{ bottom: "calc(54px + env(safe-area-inset-bottom, 0px))" }}
         >
-          {/* Primary CTA: Explore My Work */}
-          <a
-            href="#work"
-            className="inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border backdrop-blur-md cursor-pointer group"
-            style={{
-              backgroundColor: "rgba(18, 18, 18, 0.75)",
-              borderColor: "rgba(255, 255, 255, 0.2)",
-              color: "var(--text-primary)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--accent)";
-              e.currentTarget.style.color = "var(--accent)";
-              e.currentTarget.style.backgroundColor = "rgba(255, 140, 89, 0.12)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
-              e.currentTarget.style.color = "var(--text-primary)";
-              e.currentTarget.style.backgroundColor = "rgba(18, 18, 18, 0.75)";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            <span>Explore My Work</span>
-            <ArrowDown
-              size={13}
-              className="transition-transform duration-300 group-hover:translate-y-0.5"
-            />
+          <a href="#impact" className="hover:text-white transition-colors">
+            Scroll to discover ↓
           </a>
-
-          {/* Secondary CTA: Let's Connect */}
-          <a
-            href="#contact"
-            className="inline-flex items-center gap-2 px-5 sm:px-6 py-3 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border cursor-pointer backdrop-blur-sm group"
-            style={{
-              backgroundColor: "rgba(10, 10, 10, 0.4)",
-              borderColor: "var(--border)",
-              color: "var(--text-muted)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--text-primary)";
-              e.currentTarget.style.color = "var(--text-primary)";
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border)";
-              e.currentTarget.style.color = "var(--text-muted)";
-              e.currentTarget.style.backgroundColor = "rgba(10, 10, 10, 0.4)";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            <span>Let&apos;s Connect</span>
-            <ArrowUpRight
-              size={13}
-              className="transition-transform duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5"
-            />
-          </a>
-
-          {/* Resume download link (desktop only) */}
-          <a
-            href={profile.resume}
-            download
-            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-3 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 border cursor-pointer opacity-70 hover:opacity-100"
-            style={{
-              backgroundColor: "transparent",
-              borderColor: "var(--border)",
-              color: "var(--text-muted)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "var(--text-primary)";
-              e.currentTarget.style.borderColor = "var(--text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--text-muted)";
-              e.currentTarget.style.borderColor = "var(--border)";
-            }}
-          >
-            <Download size={13} />
-            <span>Resume</span>
-          </a>
-
-          {/* GitHub icon link */}
-          <a
-            href={github}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="GitHub profile"
-            className="p-3 rounded-full text-xs transition-all duration-200 border cursor-pointer opacity-70 hover:opacity-100"
-            style={{
-              borderColor: "var(--border)",
-              color: "var(--text-muted)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--accent)";
-              e.currentTarget.style.color = "var(--accent)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border)";
-              e.currentTarget.style.color = "var(--text-muted)";
-            }}
-          >
-            <GithubIcon size={14} />
-          </a>
-
-          {/* LinkedIn icon link */}
-          <a
-            href={linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="LinkedIn profile"
-            className="p-3 rounded-full text-xs transition-all duration-200 border cursor-pointer opacity-70 hover:opacity-100"
-            style={{
-              borderColor: "var(--border)",
-              color: "var(--text-muted)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--accent)";
-              e.currentTarget.style.color = "var(--accent)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border)";
-              e.currentTarget.style.color = "var(--text-muted)";
-            }}
-          >
-            <LinkedinIcon size={14} />
-          </a>
+          <span className="hidden sm:inline">Building &amp; teaching since 2021</span>
+          <span className="hidden md:inline">An ongoing exploration ↗</span>
         </div>
-      </div>
 
-      {/* Bottom Architectural Bar — shares the page gutter */}
-      <div className="container-main w-full relative z-10">
+        {/* Bottom Right Toolbar Control: Motion Toggle */}
         <div
-          ref={bottomRef}
-          className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--border)] tracking-label text-[9px] sm:text-[10px]"
+          className="ctl r fixed z-30 right-3"
+          style={{ bottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
         >
-          {/* Scroll cue */}
-          <a
-            href="#impact"
-            className="flex items-center gap-2 hover:text-[var(--accent)] transition-colors cursor-pointer group"
-            aria-label="Scroll to discover impact numbers"
+          <button
+            type="button"
+            onClick={toggleMotion}
+            aria-pressed={motionEnabled}
+            className="font-mono text-[10px] tracking-[0.1em] uppercase text-[#f2efea] border rounded-lg px-2.5 py-1.5 cursor-pointer backdrop-blur-md transition-all select-none"
+            style={{
+              backgroundColor: "rgba(28, 28, 28, 0.55)",
+              borderColor: "rgba(255, 255, 255, 0.1)",
+            }}
           >
-            <span>SCROLL TO DISCOVER</span>
-            <ArrowDown
-              size={11}
-              className={`transition-transform duration-300 group-hover:translate-y-0.5 ${
-                motionEnabled ? "animate-bounce" : ""
-              }`}
-            />
-          </a>
-
-          {/* Center Tagline */}
-          <span className="hidden md:inline text-[var(--text-muted)] font-mono opacity-80">
-            STUDENT &amp; BUILDER · NIT PATNA
-          </span>
-
-          {/* Right Status */}
-          <div className="flex items-center gap-4">
-            <span className="tracking-label text-[var(--text-muted)] opacity-80 font-mono">
-              AN ONGOING EXPLORATION ↗
-            </span>
-          </div>
+            {motionEnabled ? "Motion on" : "Motion off"}
+          </button>
         </div>
       </div>
-    </section>
+    </header>
   );
-} 
+}

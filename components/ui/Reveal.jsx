@@ -4,20 +4,12 @@ import { useMotion } from "@/context/MotionContext";
 import { useRevealOnce } from "@/components/ui/useReveal";
 
 const OFFSETS = {
-  up: { "--reveal-x": "0px", "--reveal-y": "28px" },
-  down: { "--reveal-x": "0px", "--reveal-y": "-28px" },
-  left: { "--reveal-x": "28px", "--reveal-y": "0px" },
-  right: { "--reveal-x": "-28px", "--reveal-y": "0px" },
+  up: { "--reveal-x": "0px", "--reveal-y": "16px" },
+  down: { "--reveal-x": "0px", "--reveal-y": "-16px" },
+  left: { "--reveal-x": "16px", "--reveal-y": "0px" },
+  right: { "--reveal-x": "-16px", "--reveal-y": "0px" },
 };
 
-/**
- * Reusable reveal-on-scroll wrapper.
- *
- * The server-rendered markup is fully visible — the fade/slide/blur is a CSS
- * animation that only starts once the element scrolls into view, so the
- * content is never trapped behind `opacity: 0` if JS is slow or disabled.
- * Motion OFF and `prefers-reduced-motion` skip the animation entirely.
- */
 export default function Reveal({
   children,
   delay = 0,
@@ -39,7 +31,7 @@ export default function Reveal({
       style={style}
       data-reveal=""
     >
-      {children} 
+      {children}
     </div>
   );
 }

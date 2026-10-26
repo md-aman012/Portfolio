@@ -1,641 +1,292 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import * as THREE from "three";
+import { useEffect, useRef } from "react";
 import { useMotion } from "@/context/MotionContext";
+import gsap from "gsap";
 
-const vertexShader = `
-  uniform float uTime;
-  uniform float uProgress;
-  uniform vec2 uMouse;
-  uniform float uPixelRatio;
-
-  attribute float aSize;
-  attribute float aAlpha;
-  attribute vec3 aRandom;
-  attribute float aType;
-
-  varying vec3 vColor;
-  varying float vAlpha;
-  varying float vType;
-
-  void main() {
-    vColor = color;
-    vAlpha = aAlpha;
-    vType = aType;
-
-    vec3 pos = position;
-
-    // Subtle organic breathing and floating movement
-    float breath = sin(uTime * 1.1 + pos.y * 1.6 + aRandom.x * 2.0) * 0.022;
-    pos.z += breath;
-    pos.y += cos(uTime * 0.85 + pos.x * 1.2) * 0.012;
-
-    // Organic micro-motion for floating amber embers
-    if (aType > 1.5) {
-      float t = uTime * 0.35 + aRandom.y * 12.0;
-      pos.x += sin(t * 1.2) * 0.12;
-      pos.y += cos(t * 0.85) * 0.14 + sin(uTime * 0.15) * 0.04;
-      pos.z += sin(t * 0.65) * 0.15;
-    }
-
-    // Scroll-driven dispersal: uProgress 1.0 = fully formed, 0.0 = fully dispersed
-    if (uProgress < 1.0) {
-      float p = clamp(uProgress, 0.0, 1.0);
-      float ease = 1.0 - pow(1.0 - p, 3.0);
-      vec3 disperse = vec3(
-        (aRandom.x - 0.5) * 3.5,
-        (aRandom.y - 0.5) * 2.8,
-        (aRandom.z - 0.5) * 4.2
-      );
-      pos = mix(pos + disperse, pos, ease);
-    }
-
-    // Smooth subtle parallax based on pointer position with depth displacement
-    float depthWeight = (pos.z * 0.18 + 0.08);
-    pos.x += uMouse.x * depthWeight * 0.42;
-    pos.y += uMouse.y * depthWeight * 0.32;
-
-    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-    gl_Position = projectionMatrix * mvPosition;
-
-    // Distance attenuation and device pixel ratio
-    float sizeMultiplier = (320.0 / -mvPosition.z) * uPixelRatio;
-
-    // Subtle gentle pulsation for rim and amber floaters
-    float pulse = 1.0;
-    if (aType > 0.5) {
-      pulse += 0.15 * sin(uTime * 2.2 + aRandom.z * 6.28);
-    }
-
-    gl_PointSize = aSize * sizeMultiplier * pulse;
-    gl_PointSize = clamp(gl_PointSize, 1.0, 7.5);
-  }
-`;
-
-const fragmentShader = `
-  uniform float uAmberGlow;
-  uniform float uFade;
-  varying vec3 vColor;
-  varying float vAlpha;
-  varying float vType;
-
-  void main() {
-    vec2 coord = gl_PointCoord - vec2(0.5);
-    float dist = length(coord);
-
-    if (dist > 0.5) discard;
-
-    // Crisp stardust particle with soft antialiased edge
-    float core = smoothstep(0.5, 0.08, dist);
-    float alpha = core * vAlpha * uFade;
-
-    vec3 finalColor = vColor;
-
-    // Subtle warm corona glow for amber particles
-    if (vType > 0.5) {
-      float corona = exp(-dist * 4.0) * 0.35 * uAmberGlow;
-      finalColor += vec3(0.35, 0.14, 0.02) * corona;
-      alpha = max(alpha, corona * vAlpha * uFade);
-    }
-
-    if (alpha < 0.004) discard;
-
-    gl_FragColor = vec4(finalColor, alpha);
-  }
-`;
-
-function checkWebGLSupport() {
-  if (typeof window === "undefined") return true;
-  try {
-    const testCanvas = document.createElement("canvas");
-    return Boolean(
-      testCanvas.getContext("webgl2") || testCanvas.getContext("webgl")
-    );
-  } catch {
-    return false;
-  }
-}
-
-// Keep a deterministic random subset of the particles. Selection is pseudo-random
-// rather than a scan-order stride, which would produce visible banding.
-function thinParticles(positions, colors, sizes, alphas, types, randoms, count, ratio) {
-  const out = {
-    positions: [],
-    colors: [],
-    sizes: [],
-    alphas: [],
-    types: [],
-    randoms: [],
-    count: 0,
-  };
-  let seed = 0x9e3779b9;
-  for (let i = 0; i < count; i++) {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    if ((seed >>> 8) / 16777216 >= ratio) continue;
-    const p3 = i * 3;
-    out.positions.push(positions[p3], positions[p3 + 1], positions[p3 + 2]);
-    out.colors.push(colors[p3], colors[p3 + 1], colors[p3 + 2]);
-    out.sizes.push(sizes[i]);
-    out.alphas.push(alphas[i]);
-    out.types.push(types[i]);
-    out.randoms.push(randoms[p3], randoms[p3 + 1], randoms[p3 + 2]);
-    out.count++;
-  }
-  return out;
-}
-
-export default function ParticlePortrait({ className = "", onLoaded }) {
+export default function ParticlePortrait({
+  progressRef,
+  className = "",
+}) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const { motionEnabled } = useMotion();
 
-  const [webglSupported, setWebglSupported] = useState(checkWebGLSupport);
-  const [dataReady, setDataReady] = useState(false);
-
   useEffect(() => {
-    if (!containerRef.current || !canvasRef.current || !webglSupported) return;
+    const container = containerRef.current;
+    const cv = canvasRef.current;
+    if (!container || !cv) return;
+
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
 
     let isDisposed = false;
-    let frameId = null;
-    let isVisible = true;
 
-    // Scroll-driven state. `target` is the raw scroll progress (0 at the top of
-    // the hero, 1 once the hero has scrolled out); `current` is the smoothed
-    // value actually fed to the shaders. Neither touches React state.
-    const scroll = { target: 0, current: 0 };
+    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const ss = (a, b, x) => {
+      x = clamp((x - a) / (b - a), 0, 1);
+      return x * x * (3 - 2 * x);
+    };
 
-    // Three.js scene setup
-    const container = containerRef.current;
-    const canvas = canvasRef.current;
+    let dpr = 1;
+    let W = 0;
+    let H = 0;
+    let pw = 0;
+    let ph = 0;
+    let px = 0;
+    let py = 0;
+    let P = [];
+    let proc = null;
+    let step = 4;
+    let target = 0;
+    let p = 0;
+    const mouse = { x: -999, y: -999, sx: -999, sy: -999 };
 
-    let width = container.clientWidth || window.innerWidth;
-    let height = container.clientHeight || window.innerHeight;
+    let src = null;
 
-    const scene = new THREE.Scene();
+    function build() {
+      if (!src || !src.width || !src.height) return;
+      const w = Math.round(pw * dpr);
+      const h = Math.round(ph * dpr);
+      if (w <= 0 || h <= 0) return;
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 50);
-    // Adjust camera Z based on screen width for optimal framing
-    camera.position.z = width < 768 ? 5.2 : 4.15;
-    camera.position.y = width < 768 ? 0.05 : 0.08;
+      proc = document.createElement("canvas");
+      proc.width = w;
+      proc.height = h;
+      const g = proc.getContext("2d", { willReadFrequently: true });
+      if (!g) return;
 
-    let renderer;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: false, // Particles use smoothstep in shader, antialias is unnecessary & costly
-        powerPreference: "high-performance",
-      });
-    } catch {
-      setTimeout(() => setWebglSupported(false), 0);
-      return;
+      g.drawImage(src, 0, 0, w, h);
+      const id = g.getImageData(0, 0, w, h);
+      const d = id.data;
+
+      // Detect if image is opaque (black background) or transparent PNG
+      let opaque = true;
+      for (let i = 3; i < d.length; i += 388) {
+        if (d[i] < 250) {
+          opaque = false;
+          break;
+        }
+      }
+
+      if (opaque) {
+        // Key out pure black background with smooth natural feathering
+        for (let i = 0; i < d.length; i += 4) {
+          const l = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) / 255;
+          d[i + 3] = Math.round(255 * ss(0.06, 0.26, l));
+        }
+        g.putImageData(id, 0, 0);
+      }
+
+      // Density tuned for silky smooth, non-cartoonish stardust particles
+      step = W < 768 ? 3.5 : 4.0;
+      const sd = Math.max(3, Math.round(step * dpr));
+      P = [];
+      for (let y = 0; y < h; y += sd) {
+        for (let x = 0; x < w; x += sd) {
+          const i = (y * w + x) * 4;
+          const a = d[i + 3];
+          if (a < 35) continue;
+          P.push({
+            x: x / dpr,
+            y: y / dpr,
+            r: d[i],
+            g: d[i + 1],
+            b: d[i + 2],
+            a: a / 255,
+            l: (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) / 255,
+            s: Math.random(),
+            k: Math.random() * 6.28,
+          });
+        }
+      }
     }
 
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
-    renderer.setPixelRatio(pixelRatio);
-    renderer.setSize(width, height);
-
-    // Uniforms for shaders
-    const uniforms = {
-      uTime: { value: 0.0 },
-      // 1.0 = fully formed and sharp, 0.0 = fully dispersed
-      uProgress: { value: 1.0 },
-      uFade: { value: 1.0 },
-      uMouse: { value: new THREE.Vector2(0, 0) },
-      uPixelRatio: { value: pixelRatio },
-      uAmberGlow: { value: 1.0 },
-    };
-
-    const material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms,
-      vertexColors: true,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.NormalBlending,
-    });
-
-    let pointsMesh = null;
-    let particleGeometry = null;
-
-    // Smoothed mouse tracking
-    const targetMouse = { x: 0, y: 0 };
-    const currentMouse = { x: 0, y: 0 };
-
-    // Function to populate geometry with Float32 buffers
-    const setupGeometry = (positions, colors, sizes, alphas, types, randoms, count) => {
+    function layout() {
       if (isDisposed) return;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = container.clientWidth || window.innerWidth;
+      H = container.clientHeight || window.innerHeight;
+      cv.width = W * dpr;
+      cv.height = H * dpr;
+      cv.style.width = W + "px";
+      cv.style.height = H + "px";
 
-      // Mobile GPUs render a thinned particle set to stay inside the frame budget.
-      const ratio = width < 768 ? 0.55 : 1;
-      const data =
-        ratio < 1
-          ? thinParticles(positions, colors, sizes, alphas, types, randoms, count, ratio)
-          : { positions, colors, sizes, alphas, types, randoms, count };
-
-      particleGeometry = new THREE.BufferGeometry();
-      particleGeometry.setAttribute(
-        "position",
-        new THREE.BufferAttribute(new Float32Array(data.positions), 3)
-      );
-      particleGeometry.setAttribute(
-        "color",
-        new THREE.BufferAttribute(new Float32Array(data.colors), 3)
-      );
-      particleGeometry.setAttribute(
-        "aSize",
-        new THREE.BufferAttribute(new Float32Array(data.sizes), 1)
-      );
-      particleGeometry.setAttribute(
-        "aAlpha",
-        new THREE.BufferAttribute(new Float32Array(data.alphas), 1)
-      );
-      particleGeometry.setAttribute(
-        "aType",
-        new THREE.BufferAttribute(new Float32Array(data.types), 1)
-      );
-      particleGeometry.setAttribute(
-        "aRandom",
-        new THREE.BufferAttribute(new Float32Array(data.randoms), 3)
-      );
-
-      pointsMesh = new THREE.Points(particleGeometry, material);
-      scene.add(pointsMesh);
-
-      setDataReady(true);
-      if (onLoaded) onLoaded();
-    };
-
-    // Load precomputed binary particle dataset with fallback to JSON and runtime sampling
-    const loadParticleData = async () => {
-      try {
-        const binRes = await fetch("/particles-data.bin");
-        if (binRes.ok) {
-          const arrayBuffer = await binRes.arrayBuffer();
-          const floatView = new Float32Array(arrayBuffer);
-          const count = Math.round(floatView[0]);
-          let offset = 1;
-
-          const positions = floatView.subarray(offset, offset + count * 3);
-          offset += count * 3;
-          const colors = floatView.subarray(offset, offset + count * 3);
-          offset += count * 3;
-          const sizes = floatView.subarray(offset, offset + count);
-          offset += count;
-          const alphas = floatView.subarray(offset, offset + count);
-          offset += count;
-          const types = floatView.subarray(offset, offset + count);
-          offset += count;
-          const randoms = floatView.subarray(offset, offset + count * 3);
-
-          setupGeometry(positions, colors, sizes, alphas, types, randoms, count);
-          return;
+      if (src && src.width && src.height) {
+        // Precise size and alignment matching Portrait dissolve hero.html
+        ph = Math.min(H * 0.6, 560);
+        pw = (ph * src.width) / src.height;
+        if (pw > W * 0.8) {
+          pw = W * 0.8;
+          ph = (pw * src.height) / src.width;
         }
-      } catch (err) {
-        console.warn("Binary particle loading failed, trying JSON fallback...", err);
+        px = (W - pw) / 2; // Horizontally centered
+        py = H * 0.07;     // Exactly 7% from top
+        build();
+      }
+    }
+
+    function tick(time, deltaTime) {
+      if (isDisposed) return;
+      const t = time;
+      const m = motionEnabled ? 1 : 0;
+
+      // GSAP smooth lerp - snappy & responsive
+      p += (target - p) * 0.22;
+      mouse.sx += (mouse.x - mouse.sx) * 0.18;
+      mouse.sy += (mouse.y - mouse.sy) * 0.18;
+
+      if (progressRef) {
+        progressRef.current = p;
       }
 
-      try {
-        const jsonRes = await fetch("/particles-data.json");
-        if (jsonRes.ok) {
-          const json = await jsonRes.json();
-          setupGeometry(
-            json.positions,
-            json.colors,
-            json.sizes,
-            json.alphas,
-            json.types,
-            json.randoms,
-            json.count
-          );
-          return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      const cx = W / 2;
+      const cy = H / 2;
+      const ox = mouse.x < -900 ? 0 : (mouse.sx - cx) * 0.014;
+      const oy = mouse.y < -900 ? 0 : (mouse.sy - cy) * 0.008;
+
+      const imgAlpha = 1 - ss(0, 0.16, p);
+      const fade = 1 - ss(0.62, 0.95, p);
+
+      // BEFORE SCROLL (Resting state):
+      // Clean, unpixelated photographic render with zero cartoonishness
+      if (imgAlpha > 0.01 && proc) {
+        ctx.globalAlpha = imgAlpha;
+        ctx.drawImage(proc, px + ox, py + oy, pw, ph);
+
+        // Ultra-fine micro-halftone texture only at resting state for depth,
+        // using micro-dots with low opacity so it stays sharp and photographic
+        if (P.length > 0) {
+          ctx.fillStyle = "#000";
+          ctx.globalAlpha = imgAlpha * 0.18;
+          for (let i = 0; i < P.length; i += 2) {
+            const o = P[i];
+            const s = Math.max(0.6, step * (0.08 + 0.35 * (1 - o.l)));
+            ctx.fillRect(px + ox + o.x - s / 2, py + oy + o.y - s / 2, s, s);
+          }
         }
-      } catch (err) {
-        console.warn("JSON particle loading failed, running client-side image sampler...", err);
+        ctx.globalAlpha = 1;
       }
 
-      // Dynamic client-side sampler fallback
-      sampleFromImage("/images/portrait.jpg", setupGeometry);
-    };
+      // DISSOLVED PARTICLES (Silky fluid stardust waves):
+      if (p > 0.004 && fade > 0.01 && P.length > 0) {
+        const R = 130;
+        for (let i = 0; i < P.length; i++) {
+          const o = P[i];
+          const e = ss(o.s * 0.12, o.s * 0.12 + 0.58, p);
+          if (e <= 0) continue;
 
-    const sampleFromImage = (imageSrc, callback) => {
+          const dir = (o.x - pw / 2) / (pw / 2);
+          const wave =
+            Math.sin(o.y * 0.024 + t * 1.5 * m + o.k) * 20 +
+            Math.sin(o.x * 0.016 - t * 1.1 * m) * 12;
+
+          let x = px + ox + o.x + dir * (42 + 240 * o.s) * e * e + wave * e * 0.6;
+          let y =
+            py +
+            oy +
+            o.y +
+            Math.sin(o.x * 0.028 + t * m + o.k) * 28 * e +
+            (o.s - 0.5) * 75 * e -
+            e * e * 36 * o.s;
+
+          const dx = x - mouse.sx;
+          const dy = y - mouse.sy;
+          const dd = Math.hypot(dx, dy);
+          if (dd < R && dd > 0) {
+            const f = Math.pow(1 - dd / R, 2) * 50;
+            x += (dx / dd) * f;
+            y += (dy / dd) * f;
+          }
+
+          const mx = ss(0, 0.5, e);
+          const br = 0.45 + 0.85 * o.l;
+          const cr = o.r + (clamp(240 * br, 0, 255) - o.r) * mx;
+          const cg = o.g + (clamp(142 * br, 0, 255) - o.g) * mx;
+          const cb = o.b + (clamp(82 * br, 0, 255) - o.b) * mx;
+          const al = o.a * fade * (0.6 + 0.4 * mx) * (0.5 + 0.6 * o.l);
+          const sz = 1.2 + e * 2.2 * (0.5 + o.s * 0.8);
+
+          ctx.fillStyle = `rgba(${cr | 0}, ${cg | 0}, ${cb | 0}, ${al.toFixed(2)})`;
+          ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+        }
+      }
+    }
+
+    function onScroll() {
+      // Responsive trigger: starts immediately on first scroll pixel, completes in ~320px
+      const scrollSpan = Math.min(window.innerHeight * 0.4, 340);
+      target = motionEnabled
+        ? clamp(window.scrollY / scrollSpan, 0, 1)
+        : 0;
+    }
+
+    function onResize() {
+      layout();
+      onScroll();
+    }
+
+    function onPointerMove(e) {
+      const r = cv.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
+      if (mouse.sx < -900) {
+        mouse.sx = mouse.x;
+        mouse.sy = mouse.y;
+      }
+    }
+
+    function onPointerLeave() {
+      mouse.x = -999;
+      mouse.y = -999;
+      mouse.sx = -999;
+      mouse.sy = -999;
+    }
+
+    // Load initial portrait image
+    if (!src) {
       const img = new window.Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
         if (isDisposed) return;
-        const sampleW = width < 768 ? 240 : 420;
-        const sampleH = Math.round(sampleW / (img.width / img.height));
-        const aspect = sampleW / sampleH;
-
-        const offCanvas = document.createElement("canvas");
-        offCanvas.width = sampleW;
-        offCanvas.height = sampleH;
-        const ctx = offCanvas.getContext("2d", { willReadFrequently: true });
-        ctx.drawImage(img, 0, 0, sampleW, sampleH);
-
-        const imgData = ctx.getImageData(0, 0, sampleW, sampleH).data;
-        const positions = [];
-        const colors = [];
-        const sizes = [];
-        const alphas = [];
-        const types = [];
-        const randoms = [];
-
-        const cx = 0.44;
-        const cy = 0.36;
-        const rx = 0.22;
-        const ry = 0.26;
-
-        for (let y = 0; y < sampleH; y++) {
-          for (let x = 0; x < sampleW; x++) {
-            const idx = (y * sampleW + x) * 4;
-            const r = imgData[idx];
-            const g = imgData[idx + 1];
-            const b = imgData[idx + 2];
-            const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
-
-            if (lum <= 0.055) continue;
-
-            const nx = x / sampleW;
-            const ny = y / sampleH;
-            const px = (nx - 0.5) * 4.0;
-            const py = -(ny - 0.5) * (4.0 / aspect);
-
-            const dx = (nx - cx) / rx;
-            const dy = (ny - cy) / ry;
-            const distHead = Math.sqrt(dx * dx + dy * dy);
-
-            let pz = 0;
-            if (distHead < 1.0) {
-              const headDome = Math.sqrt(Math.max(0.0, 1.0 - distHead * distHead)) * 0.75;
-              const relief = Math.pow(lum, 1.3) * 0.40;
-              pz = headDome + relief;
-            } else {
-              const torsoX = (nx - 0.5) / 0.48;
-              const torsoDome = Math.sqrt(Math.max(0.0, 1.0 - Math.min(1.0, torsoX * torsoX))) * 0.45;
-              pz = torsoDome - (ny - 0.6) * 0.3 + lum * 0.2 - 0.2;
-            }
-
-            const isAmber = r > 50 && r > b * 1.32 && r > g * 1.12 && nx > 0.38;
-
-            let cr, cg, cb, size, alpha, pType;
-            if (isAmber) {
-              pType = 1.0;
-              cr = 1.0;
-              cg = 0.55 + 0.15 * Math.random();
-              cb = 0.24;
-              size = 0.022 + 0.020 * lum;
-              alpha = Math.min(1.0, 0.50 + lum * 0.65);
-            } else {
-              pType = 0.0;
-              const v = 0.78 + 0.22 * lum;
-              cr = v * 0.95;
-              cg = v * 0.96;
-              cb = v * 1.0;
-              size = 0.018 + 0.022 * Math.pow(lum, 1.2);
-              alpha = Math.min(0.95, 0.28 + lum * 0.72);
-            }
-
-            positions.push(px + (Math.random() - 0.5) * 0.012);
-            positions.push(py + (Math.random() - 0.5) * 0.012);
-            positions.push(pz + (Math.random() - 0.5) * 0.04);
-
-            colors.push(cr, cg, cb);
-            sizes.push(size);
-            alphas.push(alpha);
-            types.push(pType);
-            randoms.push(Math.random(), Math.random(), Math.random());
-          }
-        }
-
-        // Add subtle ember floaters
-        for (let i = 0; i < 85; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const radius = 0.45 + Math.random() * 1.8;
-          const px = (cx - 0.5) * 4.0 + Math.cos(angle) * radius;
-          const py = -(cy - 0.5) * (4.0 / aspect) + Math.sin(angle) * (radius * 0.85);
-          const pz = (Math.random() - 0.5) * 1.2;
-
-          positions.push(px, py, pz);
-          colors.push(1.0, 0.62 + 0.18 * Math.random(), 0.24);
-          sizes.push(0.024 + 0.018 * Math.random());
-          alphas.push(0.30 + 0.40 * Math.random());
-          types.push(2.0);
-          randoms.push(Math.random(), Math.random(), Math.random());
-        }
-
-        callback(positions, colors, sizes, alphas, types, randoms, positions.length / 3);
+        src = img;
+        layout();
+        onScroll();
       };
-      img.onerror = () => {
-        setWebglSupported(false);
-      };
-      img.src = imageSrc;
-    };
+      img.src = "/images/portrait.png";
+    } else {
+      layout();
+      onScroll();
+    }
 
-    loadParticleData();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    container.addEventListener("pointermove", onPointerMove);
+    container.addEventListener("pointerleave", onPointerLeave);
 
-    // ---- Scroll-driven progress -------------------------------------------
-    // The hero's offset and height are measured once per layout change so the
-    // scroll handler never has to read a layout property (no thrashing).
-    let heroTop = 0;
-    let heroHeight = 1;
+    // Use GSAP ticker for rock-solid 60/120fps smoothness across all displays
+    gsap.ticker.add(tick);
 
-    const measure = () => {
-      const rect = container.getBoundingClientRect();
-      heroTop = rect.top + window.scrollY;
-      heroHeight = rect.height || 1;
-    };
-
-    const handleScroll = () => {
-      const scrolled = window.scrollY - heroTop;
-      scroll.target = Math.min(1, Math.max(0, scrolled / heroHeight));
-    };
-
-    measure();
-    handleScroll();
-    scroll.current = scroll.target;
-
-    // Mouse move handler
-    const handleMouseMove = (e) => {
-      if (!motionEnabled) return;
-      const rect = container.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetMouse.x = Math.max(-1, Math.min(1, x));
-      targetMouse.y = Math.max(-1, Math.min(1, y));
-    };
-
-    const handleMouseLeave = () => {
-      targetMouse.x = 0;
-      targetMouse.y = 0;
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    window.addEventListener("mouseleave", handleMouseLeave, { passive: true });
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    // Resize handler
-    const handleResize = () => {
-      if (!container || !renderer) return;
-      width = container.clientWidth || window.innerWidth;
-      height = container.clientHeight || window.innerHeight;
-
-      camera.aspect = width / height;
-      camera.position.z = width < 768 ? 5.2 : 4.15;
-      camera.position.y = width < 768 ? 0.05 : 0.08;
-      camera.updateProjectionMatrix();
-
-      const newPixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
-      renderer.setPixelRatio(newPixelRatio);
-      renderer.setSize(width, height);
-      uniforms.uPixelRatio.value = newPixelRatio;
-
-      measure();
-      handleScroll();
-    };
-
-    window.addEventListener("resize", handleResize, { passive: true });
-
-    // Handle WebGL context loss
-    canvas.addEventListener(
-      "webglcontextlost",
-      (e) => {
-        e.preventDefault();
-        setWebglSupported(false);
-      },
-      false
-    );
-
-    // Animation Loop — paused entirely while the hero is off screen.
-    let lastTime = performance.now();
-
-    const animate = (now) => {
-      if (isDisposed) return;
-      frameId = null;
-      if (!isVisible) return;
-
-      const delta = Math.min((now - lastTime) * 0.001, 0.1);
-      lastTime = now;
-
-      if (motionEnabled) {
-        uniforms.uTime.value += delta;
-
-        // Smooth mouse damping / lerp
-        currentMouse.x += (targetMouse.x - currentMouse.x) * 0.055;
-        currentMouse.y += (targetMouse.y - currentMouse.y) * 0.055;
-        uniforms.uMouse.value.set(currentMouse.x, currentMouse.y);
-
-        // Scroll damping — the portrait eases toward the scroll position so
-        // scrubbing up and down reverses smoothly.
-        scroll.current += (scroll.target - scroll.current) * 0.09;
-        const p = scroll.current;
-
-        // 0 = fully formed, 1 = fully dispersed
-        uniforms.uProgress.value = 1 - p;
-        uniforms.uFade.value = 1 - p * 0.9;
-
-        if (pointsMesh) {
-          // Slight scale-down and a lagging vertical shift: the portrait drifts
-          // against the scroll direction.
-          pointsMesh.scale.setScalar(1 - p * 0.16);
-          pointsMesh.position.y = -p * 0.26;
-          // Subtle restrained mesh tilt (within ~3 degrees)
-          pointsMesh.rotation.y = currentMouse.x * 0.045;
-          pointsMesh.rotation.x = -currentMouse.y * 0.035;
-        }
-      }
-
-      renderer.render(scene, camera);
-      frameId = requestAnimationFrame(animate);
-    };
-
-    // Only burn frames while the hero is actually on screen.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        isVisible = entry.isIntersecting;
-        if (isVisible && frameId === null && !isDisposed) {
-          lastTime = performance.now();
-          frameId = requestAnimationFrame(animate);
-        } else if (!isVisible && frameId !== null) {
-          cancelAnimationFrame(frameId);
-          frameId = null;
-        }
-      },
-      { threshold: 0 }
-    );
-    observer.observe(container);
-
-    frameId = requestAnimationFrame(animate);
-
-    // Cleanup
     return () => {
       isDisposed = true;
-      if (frameId) cancelAnimationFrame(frameId);
-
-      observer.disconnect();
-
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-
-      if (particleGeometry) particleGeometry.dispose();
-      if (material) material.dispose();
-      if (renderer) renderer.dispose();
+      gsap.ticker.remove(tick);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      container.removeEventListener("pointermove", onPointerMove);
+      container.removeEventListener("pointerleave", onPointerLeave);
     };
-  }, [motionEnabled, onLoaded, webglSupported]);
+  }, [motionEnabled, progressRef]);
 
   return (
     <div
       ref={containerRef}
-      className={`absolute inset-0 pointer-events-none overflow-hidden select-none z-0 ${className}`}
-      aria-hidden="true"
+      className={`absolute inset-0 pointer-events-auto ${className}`}
+      style={{ zIndex: 1 }}
     >
-      {/* Dynamic WebGL Canvas — always rendered so ref is available */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full block"
-        style={{
-          opacity: webglSupported && motionEnabled && dataReady ? 1 : 0,
-          transition: "opacity 0.8s ease-out",
-          display: webglSupported && motionEnabled ? "block" : "none",
-        }}
-      />
-
-      {/* Graceful Fallback Portrait Image if WebGL is unsupported or motion disabled */}
-      {(!webglSupported || !motionEnabled) && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-full max-w-[540px] aspect-[1402/1122] opacity-80 mix-blend-screen">
-            <Image
-              src="/images/portrait.jpg"
-              alt="Md Aman Portrait"
-              fill
-              priority
-              className="object-contain"
-              style={{
-                filter: "grayscale(100%) contrast(120%) brightness(90%)",
-                maskImage:
-                  "radial-gradient(circle at 50% 45%, black 45%, transparent 75%)",
-                WebkitMaskImage:
-                  "radial-gradient(circle at 50% 45%, black 45%, transparent 75%)",
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Subtle Bottom vignette fade to blend seamlessly into page background */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(3, 3, 3, 0.1) 0%, transparent 40%, rgba(3, 3, 3, 0.7) 80%, #030303 100%)",
-        }}
-      />
+      <canvas ref={canvasRef} aria-hidden="true" className="w-full h-full block" />
     </div>
   );
 }

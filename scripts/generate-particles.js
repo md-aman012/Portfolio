@@ -7,9 +7,9 @@ async function generate() {
   const binOut = path.join(__dirname, '../public/particles-data.bin');
   const jsonOut = path.join(__dirname, '../public/particles-data.json');
 
-  // Optimal resolution for crisp facial details: eyes, stubble, lips, curls
-  const width = 460;
-  const height = 368;
+  // Optimal resolution for crisp, detailed facial features: eyes, beard, lips, hair
+  const width = 520;
+  const height = 416;
   const aspect = width / height;
 
   const { data, info } = await sharp(inputPath)
@@ -45,8 +45,8 @@ async function generate() {
 
       const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
 
-      // Pure background cutoff
-      if (lum < 0.052) continue;
+      // Pure black background cutoff (isolates portrait cleanly from background)
+      if (lum < 0.026) continue;
 
       const nx = x / width;
       const ny = y / height;
@@ -58,35 +58,36 @@ async function generate() {
       const isHead = distHeadSq < 1.0;
 
       // In low-contrast dark kurta sections outside head, prune slightly for balanced density
-      if (!isHead && lum < 0.13) {
-        if (Math.random() > 0.45) continue;
+      if (!isHead && lum < 0.11) {
+        if (Math.random() > 0.65) continue;
       }
 
-      // World scale
-      const worldScale = 3.65;
+      // World scale & vertical positioning:
+      // Calibrated so head is framed with breathing room below top bar,
+      // and shoulders gracefully layer behind the hero typography
+      const worldScale = 3.35;
+      const yOffset = 0.22;
       const px = (nx - 0.5) * worldScale;
-      // Invert Y for 3D coordinate system; lift face so eyes, nose and mouth sit completely clear above text
-      const py = -(ny - 0.5) * (worldScale / aspect) + 0.62;
+      const py = -(ny - 0.5) * (worldScale / aspect) + yOffset;
 
       // 3D anatomical relief
       let pz = 0;
       if (isHead) {
         // Dome curvature
-        const dome = Math.sqrt(Math.max(0.0, 1.0 - distHeadSq)) * 0.65;
+        const dome = Math.sqrt(Math.max(0.0, 1.0 - distHeadSq)) * 0.62;
         // Facial relief: highlighted features pop forward
-        const relief = Math.pow(lum, 1.25) * 0.38;
+        const relief = Math.pow(lum, 1.15) * 0.35;
         pz = dome + relief;
       } else {
         // Torso/shoulders curve backward
         const torsoDist = Math.abs(nx - 0.5) / 0.52;
-        const torsoDome = Math.sqrt(Math.max(0.0, 1.0 - Math.min(1.0, torsoDist * torsoDist))) * 0.38;
-        pz = torsoDome - (ny - 0.55) * 0.45 + lum * 0.18 - 0.25;
+        const torsoDome = Math.sqrt(Math.max(0.0, 1.0 - Math.min(1.0, torsoDist * torsoDist))) * 0.35;
+        pz = torsoDome - (ny - 0.55) * 0.42 + lum * 0.16 - 0.22;
       }
 
       // Natural amber/golden rim detection from portrait lighting
-      // Amber glow exists in the hair highlights and right rim of neck/shoulder
-      const isWarm = r > 70 && (r > b * 1.35) && (r > g * 1.06);
-      const isHairOrRim = (ny < 0.42 || (nx > 0.50 && ny < 0.72));
+      const isWarm = r > 55 && (r > b * 1.25) && (r > g * 1.04);
+      const isHairOrRim = (ny < 0.45 || (nx > 0.48 && ny < 0.75));
       const isAmberRim = isWarm && isHairOrRim;
 
       let cr, cg, cb, pSize, pAlpha, pType;
@@ -95,31 +96,31 @@ async function generate() {
         amberRimCount++;
         pType = 1.0; // Amber rim particle
         // Rich warm amber/gold tone
-        cr = Math.min(1.0, (r / 255.0) * 1.30 + 0.12);
-        cg = Math.min(1.0, (g / 255.0) * 1.08 + 0.04);
+        cr = 1.0;
+        cg = Math.min(1.0, (g / 255.0) * 1.25 + 0.10);
         cb = Math.min(1.0, (b / 255.0) * 0.75);
-        pSize = 0.020 + 0.018 * lum;
-        pAlpha = Math.min(1.0, 0.45 + lum * 0.65);
+        pSize = 0.012 + 0.012 * lum;
+        pAlpha = Math.min(1.0, 0.60 + lum * 0.40);
       } else {
         whiteCount++;
         pType = 0.0; // Silver/white face & body particle
-        // Rich tonal contrast from photo:
-        // Highlights are pure crisp white/platinum; midtones are silver; deep shadows are dark charcoal stardust
-        const lumCurve = Math.pow(lum, 1.15);
-        const v = 0.48 + 0.52 * lumCurve;
-        cr = v * 0.95;
-        cg = v * 0.96;
-        cb = v * 1.0;
-        pSize = 0.016 + 0.022 * lumCurve;
-        pAlpha = Math.min(0.96, 0.20 + lumCurve * 0.80);
+        // Photographic clarity & visibility:
+        // Gentle gamma curve reveals eyes, eyebrows, nose, beard and facial contours
+        const tone = Math.pow(lum, 0.80);
+        const v = 0.40 + 0.60 * tone;
+        cr = v * 0.98;
+        cg = v * 0.97;
+        cb = v * 0.96;
+        pSize = 0.010 + 0.012 * tone;
+        pAlpha = Math.min(1.0, 0.52 + tone * 0.48);
       }
 
       // Micro jitter for organic stardust dispersal
-      const jitter = 0.009;
+      const jitter = 0.007;
       positions.push(
         px + (Math.random() - 0.5) * jitter,
         py + (Math.random() - 0.5) * jitter,
-        pz + (Math.random() - 0.5) * jitter * 2.0
+        pz + (Math.random() - 0.5) * jitter * 1.8
       );
 
       colors.push(cr, cg, cb);
@@ -131,18 +132,20 @@ async function generate() {
   }
 
   // Floating embers (subtle, delicate drifting specks)
-  const emberCount = 85;
+  const emberCount = 90;
+  const worldScale = 3.35;
+  const yOffset = 0.22;
   for (let i = 0; i < emberCount; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const radius = 0.45 + Math.random() * 1.9;
-    const px = (faceCenterX - 0.5) * 3.65 + Math.cos(angle) * radius;
-    const py = -(faceCenterY - 0.5) * (3.65 / aspect) + 0.62 + Math.sin(angle) * (radius * 0.85);
+    const radius = 0.45 + Math.random() * 1.85;
+    const px = (faceCenterX - 0.5) * worldScale + Math.cos(angle) * radius;
+    const py = -(faceCenterY - 0.5) * (worldScale / aspect) + yOffset + Math.sin(angle) * (radius * 0.85);
     const pz = (Math.random() - 0.5) * 1.3;
 
     positions.push(px, py, pz);
     colors.push(1.0, 0.62 + 0.18 * Math.random(), 0.24);
-    sizes.push(0.024 + 0.018 * Math.random());
-    alphas.push(0.30 + 0.40 * Math.random());
+    sizes.push(0.016 + 0.014 * Math.random());
+    alphas.push(0.35 + 0.45 * Math.random());
     types.push(2.0); // Floater ember
     randoms.push(Math.random(), Math.random(), Math.random());
   }

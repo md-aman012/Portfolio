@@ -1,275 +1,146 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { profile } from "@/data/portfolio";
-import MotionToggle from "./MotionToggle";
 import { Menu, X } from "lucide-react";
-
-const navLinks = [
-  { label: "Work", href: "#work" },
-  { label: "About", href: "#about" },
-  { label: "Skills", href: "#skills" },
-  { label: "Journey", href: "#journey" },
-  { label: "Resume", href: "#resume" },
-];
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState(null);
-
-  const menuRef = useRef(null);
-  const toggleRef = useRef(null);
-
-  // Backdrop appears once the page has scrolled away from the hero
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  // Highlight the section currently under the middle of the viewport
-  useEffect(() => {
-    const targets = navLinks
-      .map((link) => document.getElementById(link.href.slice(1)))
-      .filter(Boolean);
-    if (!targets.length) return;
-
-    const visible = new Set();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) visible.add(entry.target.id);
-          else visible.delete(entry.target.id);
-        });
-        const next =
-          navLinks.map((link) => link.href.slice(1)).find((id) => visible.has(id)) ??
-          null;
-        setActiveSection(next);
-      },
-      // A thin band across the middle of the viewport decides the active section
-      { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
-    );
-
-    targets.forEach((target) => observer.observe(target));
-    return () => observer.disconnect();
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setMobileOpen(false);
-    // Return focus to the trigger so keyboard users are not stranded
-    toggleRef.current?.focus();
-  }, []);
-
-  // Focus trap + Escape handling for the mobile drawer
-  useEffect(() => {
-    if (!mobileOpen) return;
-
-    const node = menuRef.current;
-    const getFocusable = () =>
-      node
-        ? Array.from(
-            node.querySelectorAll('a[href], button:not([disabled])')
-          ).filter((el) => el.offsetParent !== null)
-        : [];
-
-    // Move focus into the drawer once it has mounted
-    const first = getFocusable()[0];
-    if (first) first.focus();
-
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeMenu();
-        return;
-      }
-      if (e.key !== "Tab") return;
-
-      const items = getFocusable();
-      if (!items.length) return;
-      const firstEl = items[0];
-      const lastEl = items[items.length - 1];
-
-      if (e.shiftKey && document.activeElement === firstEl) {
-        e.preventDefault();
-        lastEl.focus();
-      } else if (!e.shiftKey && document.activeElement === lastEl) {
-        e.preventDefault();
-        firstEl.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [mobileOpen, closeMenu]);
-
-  // Prevent body scroll while the drawer is open
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [mobileOpen]);
 
   return (
-    <header
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-      style={{
-        backgroundColor: scrolled ? "rgba(8, 8, 8, 0.82)" : "transparent",
-        backdropFilter: scrolled ? "blur(var(--nav-blur))" : "none",
-        WebkitBackdropFilter: scrolled ? "blur(var(--nav-blur))" : "none",
-        borderBottom: scrolled ? "1px solid var(--border)" : "1px solid transparent",
-      }}
-    >
-      {/* Gradient scrim keeps the top row readable over the hero particles */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[var(--nav-height)] transition-opacity duration-300"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(3,3,3,0.86) 0%, rgba(3,3,3,0.55) 55%, rgba(3,3,3,0) 100%)",
-          opacity: scrolled ? 0 : 1,
-        }}
-      />
-
+    <>
       <nav
-        className="container-main relative flex items-center justify-between gap-6"
-        style={{ height: "var(--nav-height)" }}
+        className="fixed z-50 left-1/2 -translate-x-1/2 flex items-center justify-between transition-all duration-300"
+        style={{
+          top: "calc(14px + env(safe-area-inset-top, 0px))",
+          width: "min(1100px, calc(100% - 24px))",
+          minHeight: "56px",
+          padding: "8px 10px 8px 22px",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "18px",
+          backgroundColor: "rgba(28, 28, 28, 0.55)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+        }}
         aria-label="Main navigation"
       >
-        {/* Logo */}
+        {/* Logo / Name */}
         <Link
           href="/"
-          className="font-serif italic text-2xl tracking-normal transition-opacity hover:opacity-80"
-          style={{ color: "var(--text-primary)" }}
+          className="font-serif italic text-2xl tracking-normal text-[#f2efea] hover:opacity-80 transition-opacity select-none"
         >
           {profile.name}
         </Link>
 
-        {/* Desktop links + controls */}
-        <div className="hidden md:flex items-center gap-7">
-          {navLinks.map((link) => {
-            const isActive = activeSection === link.href.slice(1);
-            return (
-              <a
-                key={link.label}
-                href={link.href}
-                className="nav-link"
-                aria-current={isActive ? "true" : undefined}
-              >
-                {link.label}
-                <span className="nav-arrow" aria-hidden="true">
-                  ↗
-                </span>
-              </a>
-            );
-          })}
+        {/* Desktop links */}
+        <ul className="hidden md:flex items-center gap-[26px] list-none m-0 p-0 text-[13px] text-[#f2efea]">
+          <li>
+            <a href="#work" className="text-[#f2efea] hover:opacity-80 transition-opacity">
+              Work
+            </a>
+          </li>
+          <li>
+            <a href="#about" className="text-[#f2efea] hover:opacity-80 transition-opacity">
+              About
+            </a>
+          </li>
+          <li>
+            <a href="#skills" className="text-[#f2efea] hover:opacity-80 transition-opacity">
+              Content
+            </a>
+          </li>
+          <li>
+            <a href="#journey" className="text-[#f2efea] hover:opacity-80 transition-opacity">
+              Speaking
+            </a>
+          </li>
+          <li>
+            <a
+              href="#contact"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-[#f2efea] transition-all duration-200"
+              style={{
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backgroundColor: "rgba(255, 255, 255, 0.07)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.14)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.22)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.07)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+              }}
+            >
+              Let’s talk ↗
+            </a>
+          </li>
+        </ul>
 
-          <span
-            aria-hidden="true"
-            className="w-px h-5 shrink-0"
-            style={{ background: "var(--border)" }}
-          />
-
-          <MotionToggle />
-
-          <a href="#contact" className="nav-cta">
-            Let&apos;s talk
-          </a>
-        </div>
-
-        {/* Mobile menu button */}
-        <div className="flex items-center gap-3 md:hidden">
-          <MotionToggle />
-          <button
-            ref={toggleRef}
-            onClick={() => (mobileOpen ? closeMenu() : setMobileOpen(true))}
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-menu"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: "var(--text-primary)" }}
+        {/* Mobile menu trigger + CTA */}
+        <div className="flex items-center gap-2.5 md:hidden">
+          <a
+            href="#contact"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[#f2efea] transition-all"
+            style={{
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              backgroundColor: "rgba(255, 255, 255, 0.07)",
+            }}
           >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            Let’s talk ↗
+          </a>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-expanded={mobileOpen}
+            aria-label="Toggle menu"
+            className="p-1.5 text-[#f2efea] hover:opacity-80 transition-opacity"
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu overlay */}
+      {/* Mobile Drawer Dropdown */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            id="mobile-menu"
-            ref={menuRef}
-            key="mobile-menu"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile navigation"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="fixed inset-x-0 bottom-0 md:hidden z-40 overflow-y-auto"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed z-40 left-1/2 -translate-x-1/2 md:hidden flex flex-col gap-3 p-4 rounded-2xl"
             style={{
-              top: "var(--nav-height)",
-              backgroundColor: "rgba(10, 10, 10, 0.98)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
+              top: "calc(78px + env(safe-area-inset-top, 0px))",
+              width: "min(1100px, calc(100% - 24px))",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              backgroundColor: "rgba(20, 20, 20, 0.92)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
             }}
           >
-            <nav className="container-main flex flex-col gap-1 pt-8 pb-10">
-              {navLinks.map((link, i) => (
-                <motion.a
-                  key={link.label}
-                  href={link.href}
-                  onClick={closeMenu}
-                  initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  transition={{
-                    duration: 0.45,
-                    delay: 0.06 * i + 0.08,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  className="text-2xl font-medium py-3 transition-colors"
-                  style={{
-                    color: "var(--text-primary)",
-                    borderBottom: "1px solid var(--border)",
-                  }}
-                >
-                  {link.label}
-                  <span className="ml-2 text-sm" style={{ color: "var(--accent)" }}>
-                    ↗
-                  </span>
-                </motion.a>
-              ))}
-
-              <motion.a
-                href="#contact"
-                onClick={closeMenu}
-                initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{
-                  duration: 0.45,
-                  delay: 0.06 * navLinks.length + 0.08,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className="mt-6 text-center text-sm font-mono uppercase tracking-wider py-3 rounded-full transition-all"
-                style={{
-                  background: "var(--accent)",
-                  color: "var(--bg-page)",
-                }}
+            {[
+              { label: "Work", href: "#work" },
+              { label: "About", href: "#about" },
+              { label: "Content", href: "#skills" },
+              { label: "Speaking", href: "#journey" },
+              { label: "Resume", href: "#resume" },
+              { label: "Contact", href: "#contact" },
+            ].map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="text-base text-[#f2efea] py-2 px-3 rounded-lg hover:bg-white/10 transition-colors flex items-center justify-between"
               >
-                Let&apos;s talk
-              </motion.a>
-            </nav>
+                <span>{item.label}</span>
+                <span className="text-xs text-[#8a8a8a]">↗</span>
+              </a>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

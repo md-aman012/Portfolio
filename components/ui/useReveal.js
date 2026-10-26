@@ -3,26 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * One-shot "has this entered the viewport?" flag.
+ * High-performance, butter-smooth reveal hook.
  *
- * The element itself is never hidden by this hook — the resting state is
- * visible. The reveal is a CSS animation applied on top, so content stays
- * readable if JavaScript is slow, blocked or disabled.
+ * Uses positive bottom margin (60px) so the animation triggers smoothly
+ * BEFORE the element enters the user's field of view. When motion is disabled,
+ * it immediately returns true without cascading setState renders.
  */
-export function useRevealOnce({ enabled = true, rootMargin = "0px 0px -12% 0px" } = {}) {
+export function useRevealOnce({ enabled = true, rootMargin = "0px 0px 60px 0px" } = {}) {
   const ref = useRef(null);
   const [revealed, setRevealed] = useState(false);
- 
+
   useEffect(() => {
     if (!enabled) return undefined;
 
     const node = ref.current;
     if (!node) return undefined;
 
-    // No IntersectionObserver (or a very old browser) — show everything.
     if (typeof IntersectionObserver === "undefined") {
-      const frame = requestAnimationFrame(() => setRevealed(true));
-      return () => cancelAnimationFrame(frame);
+      const id = requestAnimationFrame(() => setRevealed(true));
+      return () => cancelAnimationFrame(id);
     }
 
     const observer = new IntersectionObserver(
@@ -32,14 +31,14 @@ export function useRevealOnce({ enabled = true, rootMargin = "0px 0px -12% 0px" 
           observer.disconnect();
         }
       },
-      { rootMargin, threshold: 0.01 }
+      { rootMargin, threshold: 0 }
     );
 
     observer.observe(node);
     return () => observer.disconnect();
   }, [enabled, rootMargin]);
 
-  return [ref, revealed];
+  return [ref, !enabled || revealed];
 }
 
 export default useRevealOnce;

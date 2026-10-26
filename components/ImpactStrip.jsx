@@ -38,12 +38,13 @@ function MetricColumn({ stat, motionEnabled, isLast, index }) {
   return (
     <div
       ref={ref}
+      data-reveal=""
       className={`p-6 sm:p-8 lg:p-10 flex flex-col justify-between transition-colors duration-300 hover:bg-[#0f0f0f] ${
         revealed ? "reveal-play" : ""
       } ${
         !isLast ? "border-b lg:border-b-0 lg:border-r border-[var(--border)]" : ""
       }`}
-      style={{ "--reveal-delay": `${index * 90}ms` }}
+      style={{ "--reveal-delay": `${index * 50}ms` }}
     >
       <div>
         <span

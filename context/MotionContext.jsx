@@ -1,8 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
+import Lenis from "lenis";
 
-const MotionContext = createContext({ motionEnabled: true, toggleMotion: () => {} });
+const MotionContext = createContext({
+  motionEnabled: true,
+  toggleMotion: () => {},
+});
 
 // Use a ref-based approach to read localStorage without triggering setState in effect
 function getInitialMotionPreference() {
@@ -49,6 +53,33 @@ export function MotionProvider({ children }) {
     motionState = getInitialMotionPreference();
     motionListeners.forEach((l) => l());
   }, []);
+
+  // Initialize Lenis smooth scroll for butter-smooth website animation
+  useEffect(() => {
+    if (!motionEnabled) return;
+
+    const lenis = new Lenis({
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: "vertical",
+      gestureOrientation: "vertical",
+      smoothWheel: true,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.5,
+    });
+
+    let rafId;
+    function raf(time) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+    rafId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
+  }, [motionEnabled]);
 
   const toggleMotion = () => {
     motionState = !motionState;
