@@ -85,7 +85,7 @@ export default function Hero() {
             className="dot inline-block w-[5px] h-[5px] bg-[#e8704f] mr-2 align-middle"
             aria-hidden="true"
           />
-          Engineer. Educator. Builder.
+          DEVELOPER. PROBLEM SOLVER. INNOVATOR.
         </div>
 
         {/* Top Edge Right */}
@@ -100,11 +100,11 @@ export default function Hero() {
         <div className="rail mono hidden md:block absolute z-10 left-7 top-[30svh] font-mono text-[10px] tracking-[0.14em] uppercase text-[#8a8a8a] leading-[1.6] select-none">
           <b className="block text-[#e8704f] font-normal mb-3.5">01 / Presence</b>
           <div className="plus text-[#e8704f] text-base mb-2 font-normal">+</div>
-          Engineering
+          SOFTWARE DEVELOPMENT
           <br />
-          Education
+          AI & MACHINE LEARNING
           <br />
-          Human connection
+          DATA STRUCTURES & ALGORITHMS
         </div>
 
         {/* Main Center Typography */}
@@ -130,7 +130,7 @@ export default function Hero() {
 
           {/* Subtitle */}
           <p className="sub mt-[clamp(10px,2.4svh,24px)] text-[#cfcac2] max-w-[34ch] text-xs sm:text-sm md:text-base leading-relaxed">
-            I build products, teach developers, and help education businesses grow.
+            I build web experiences, solve complex problems, and explore the possibilities of AI.
           </p>
 
           {/* CTA Buttons */}
@@ -170,7 +170,7 @@ export default function Hero() {
           <a href="#impact" className="hover:text-white transition-colors">
             Scroll to discover ↓
           </a>
-          <span className="hidden sm:inline">Building &amp; teaching since 2021</span>
+          <span className="hidden sm:inline">BUILDING • LEARNING • SHIPPING</span>
           <span className="hidden md:inline">An ongoing exploration ↗</span>
         </div>
 
