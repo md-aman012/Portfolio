@@ -1,7 +1,7 @@
 // data/portfolio.js — single source of truth for all site content.
 // Anything marked TODO must be confirmed by Aman before launch.
 
-export const profile = {
+export const profile = { 
   name: "Md Aman",
   shortName: "Aman",
   role: "Full-Stack Developer",
@@ -9,15 +9,16 @@ export const profile = {
   location: "Patna, India",
   college: "National Institute of Technology, Patna",
   degree: "B.Tech, Computer Science & Engineering",
-  email: "mdamd.ug24.cs@nitp.ac.in", // TODO: confirm preferred public email
-  resume: "/Md_Aman_Resume.pdf",
+  email: "mdaman13720@gmail.com", // TODO: confirm preferred public email
+  resume: "/Resume.pdf",
   siteUrl: "https://TODO-your-domain.vercel.app", // TODO: replace after deploy
 };
+
 
 export const socials = [
   { label: "GitHub", href: "https://github.com/md-aman012" },
   { label: "LinkedIn", href: "https://www.linkedin.com/in/md-aman-76000a324/" },
-  { label: "Email", href: "mailto:mdamd.ug24.cs@nitp.ac.in" },
+  { label: "Email", href: "mailto:mdaman13720@gmail.com" },
   // Optional: { label: "Instagram", href: "https://instagram.com/amansaab_0" }, // TODO: only if Aman wants it public
 ];
 
@@ -28,7 +29,7 @@ export const about = {
     "I like building real-world projects end to end — from the database and REST APIs to the interface people actually use.",
     "Outside of class I help run tech communities on campus and take part in hackathons, where I learn the most.",
   ],
-  focus: ["Full-stack web", "JavaScript", "DSA & problem solving", "Cloud basics"],
+  focus: ["Full-stack web", "Agentic AI", "DSA & problem solving", "Cloud Services"],
 };
 
 export const education = [
@@ -103,8 +104,8 @@ export const stats = [
     detail: "Gold League",
   },
   {
-    value: "3",
-    numericTarget: 3,
+    value: "8+",
+    numericTarget: 8,
     label: "Projects shipped",
     detail: "Full-stack & systems",
   },

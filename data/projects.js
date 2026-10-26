@@ -39,7 +39,7 @@ export const projects = [
     image:
       "linear-gradient(135deg, rgba(255,140,89,0.16) 0%, rgba(255,140,89,0.04) 45%, transparent 100%)",
     liveUrl: null, // TODO: live demo URL once deployed
-    repoUrl: "https://github.com/md-aman012", // TODO: replace with the exact repo URL
+    repoUrl: "https://github.com/md-aman012/Ai_Audit_Adobe_Hackathon", // TODO: replace with the exact repo URL
     screenshot: null, // TODO: drop a real screenshot at /images/<id>.jpg
   },
   {
@@ -59,9 +59,9 @@ export const projects = [
     tags: ["React.js", "Node.js", "Express.js", "PostgreSQL", "AWS S3", "JWT", "Multer"],
     image:
       "linear-gradient(135deg, rgba(255,140,89,0.13) 0%, rgba(255,140,89,0.03) 50%, transparent 100%)",
-    liveUrl: null, // TODO: live demo URL once deployed
-    repoUrl: "https://github.com/md-aman012", // TODO: replace with the exact repo URL
-    screenshot: null, // TODO: drop a real screenshot at /images/<id>.jpg
+    liveUrl: "https://distributed-file-storage-xi.vercel.app/", // TODO: live demo URL once deployed
+    repoUrl: "https://github.com/md-aman012/Distributed-file-Storage", // TODO: replace with the exact repo URL
+    screenshot: "/images/2.jpg", // TODO: drop a real screenshot at /images/<id>.jpg
   },
   {
     id: "civicbridge",
@@ -79,9 +79,9 @@ export const projects = [
     tags: ["React.js", "Tailwind CSS", "Node.js", "Express.js", "MongoDB", "JWT", "Cloudinary", "Leaflet/Mapbox"],
     image:
       "linear-gradient(135deg, rgba(255,140,89,0.15) 0%, rgba(255,140,89,0.02) 55%, transparent 100%)",
-    liveUrl: null, // TODO: live demo URL once deployed
+    liveUrl: "https://civic-bridge-team-matrix.vercel.app/", // TODO: live demo URL once deployed
     repoUrl: "https://github.com/md-aman012/CivicBridge_Team_Matrix", // TODO: confirm this is the right link
-    screenshot: null, // TODO: drop a real screenshot at /images/<id>.jpg
+    screenshot: "/images/3.jpg", // TODO: drop a real screenshot at /images/<id>.jpg
   },
 
   // ---------------------------------------------------------------------------
@@ -90,72 +90,91 @@ export const projects = [
   // for an actual project (or delete the entry) before publishing.
   // ---------------------------------------------------------------------------
   {
-    // TODO: replace with a real project
-    id: "demo-ecommerce-dashboard",
-    title: "Demo Project One – E-commerce Dashboard",
-    subtitle: "Store analytics and inventory control",
-    date: "Sample",
-    category: "E-commerce · Full-stack",
-    description:
-      "A full-featured e-commerce dashboard with real-time analytics, inventory management and customer insights. Placeholder project — swap in the real build.",
-    highlights: [
-      "Built a sales overview with revenue, order and conversion metrics.",
-      "Added inventory management with low-stock alerts and restock workflows.",
-      "Implemented customer segmentation and repeat-purchase analytics.",
-      "Placeholder entry — replace with the real project highlights.",
-    ],
-    tags: ["Next.js", "Tailwind", "MongoDB"],
-    image:
-      "linear-gradient(135deg, rgba(255,140,89,0.18) 0%, rgba(255,140,89,0.04) 45%, transparent 100%)",
-    liveUrl: "https://demo-ecommerce.vercel.app",
-    repoUrl: "https://github.com/md-aman012/demo-ecommerce",
-    screenshot: null,
-    isPlaceholder: true,
-  },
+  id: "Workout-Tracker",
+  title: "Workout Tracker",
+  subtitle: "Track Every Rep. Measure Your Progress.",
+  date: "2026",
+  category: "Full-Stack · Fitness Tech",
+  description:
+    "A full-stack fitness tracking application built to help users manage workouts, log exercises and sets, review training history, and visualize progress through interactive charts. Features authentication, daily workout tracking, and weekly workout summaries.",
+  highlights: [
+    "Built workout logging with exercise management and set-by-set tracking.",
+    "Developed workout history and daily/weekly views to review training activity.",
+    "Integrated interactive progress charts to visualize workout trends.",
+    "Implemented Supabase integration and authentication flows with Next.js server-side support."
+  ],
+  tags: [
+    "Next.js",
+    "TypeScript",
+    "React",
+    "Tailwind CSS",
+    "Supabase",
+    "Recharts"
+  ],
+  image:
+    "linear-gradient(135deg, rgba(34,197,94,0.20) 0%, rgba(16,185,129,0.08) 45%, transparent 100%)",
+  liveUrl: "https://workout-tracker-eight-lovat.vercel.app/",
+  repoUrl: "https://github.com/md-aman012/Workout_Tracker",
+  screenshot: "/images/4.jpg",
+  isPlaceholder: true,
+},
+{
+  id: "IEEE-SB-NITP",
+  title: "IEEE SB NIT Patna Website",
+  subtitle: "Building the Digital Presence of IEEE SB NITP",
+  date: "2025",
+  category: "Open Source · Web Development",
+  description:
+    "Contributed to the official website of the IEEE Student Branch at NIT Patna, collaborating on UI improvements, website navigation, and component integration to enhance the online experience for students and visitors.",
+  highlights: [
+    "Updated the homepage to align with a revised Figma design.",
+    "Improved the Contact Us section by integrating the dedicated contact page.",
+    "Updated the Become a Member button to navigate users to the membership page.",
+    "Fixed a duplicate footer issue to maintain a consistent page layout."
+  ],
+  tags: [
+    "Next.js",
+    "React",
+    "JavaScript",
+    "Tailwind CSS",
+    "Git",
+    "Collaborative Development"
+  ],
+  image:
+    "linear-gradient(135deg, rgba(59,130,246,0.20) 0%, rgba(99,102,241,0.08) 45%, transparent 100%)",
+  liveUrl: "https://ieeesbnitp.vercel.app/",
+  repoUrl: "https://github.com/Sandeepkumargond/IEEE_SB_NITP-official-site",
+  screenshot: "/images/5.jpg",
+  isPlaceholder: false,
+},
   {
-    // TODO: replace with a real project
-    id: "demo-realtime-chat",
-    title: "Demo Project Two – Realtime Chat App",
-    subtitle: "Messaging with presence and typing states",
-    date: "Sample",
-    category: "Communication · Realtime",
-    description:
-      "A real-time messaging platform with WebSocket integration, user authentication and file sharing capabilities. Placeholder project — swap in the real build.",
-    highlights: [
-      "Implemented WebSocket rooms with typing indicators and presence.",
-      "Added JWT authentication and per-conversation read receipts.",
-      "Built file sharing with drag-and-drop upload and link previews.",
-      "Placeholder entry — replace with the real project highlights.",
-    ],
-    tags: ["React", "Node.js", "Socket.io"],
-    image:
-      "linear-gradient(135deg, rgba(94,234,212,0.14) 0%, rgba(94,234,212,0.03) 45%, transparent 100%)",
-    liveUrl: "https://demo-chat.vercel.app",
-    repoUrl: "https://github.com/md-aman012/demo-chat",
-    screenshot: null,
-    isPlaceholder: true,
-  },
-  {
-    // TODO: replace with a real project
-    id: "demo-ai-notes-assistant",
-    title: "Demo Project Three – AI Notes Assistant",
-    subtitle: "Summaries and topic extraction for notes",
-    date: "Sample",
-    category: "AI tools · Next.js",
-    description:
-      "An intelligent note-taking application with AI-powered summarization, topic extraction and smart organization features. Placeholder project — swap in the real build.",
-    highlights: [
-      "Added one-click summaries and key-point extraction over long notes.",
-      "Built automatic tagging and topic clustering across a notebook.",
-      "Implemented semantic search over stored notes with PostgreSQL.",
-      "Placeholder entry — replace with the real project highlights.",
-    ],
-    tags: ["Next.js", "OpenAI API", "PostgreSQL"],
-    image:
-      "linear-gradient(135deg, rgba(167,139,250,0.14) 0%, rgba(167,139,250,0.03) 45%, transparent 100%)",
-    liveUrl: "https://demo-ai-notes.vercel.app",
-    repoUrl: "https://github.com/md-aman012/demo-ai-notes",
-    screenshot: null,
-    isPlaceholder: true,
-  },
+  id: "Personal-Blog",
+  title: "Personal Blog Platform",
+  subtitle: "A Space to Write, Publish, and Share Ideas",
+  date: "2026",
+  category: "Full-Stack · Web Development",
+  description:
+    "A full-stack blogging platform that enables users to create, publish, edit, and manage blog posts through a dedicated dashboard. Built with a React frontend and Node.js/Express backend, it includes user authentication, protected routes, Markdown rendering, and a MongoDB-backed content management system.",
+  highlights: [
+    "Developed login and signup flows with JWT-based authentication and protected routes.",
+    "Implemented blog post creation, editing, deletion, and retrieval using REST APIs.",
+    "Integrated MongoDB and Mongoose for storing users and blog posts, with unique URL-friendly slugs.",
+    "Improved the interface with responsive styling, dark-mode support, and a dashboard for managing posts."
+  ],
+  tags: [
+    "React",
+    "Node.js",
+    "Express.js",
+    "MongoDB",
+    "Mongoose",
+    "JWT",
+    "REST API"
+  ],
+  image:
+    "linear-gradient(135deg, rgba(139,92,246,0.20) 0%, rgba(59,130,246,0.08) 45%, transparent 100%)",
+  liveUrl: "https://blog-xi-lac-93.vercel.app/",
+  repoUrl: "https://github.com/md-aman012/Blog",
+  screenshot: "/images/6.png",
+  isPlaceholder: false,
+},
 ];

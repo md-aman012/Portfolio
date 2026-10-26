@@ -6,7 +6,7 @@ import { useMotion } from "@/context/MotionContext";
 import { useRevealOnce } from "@/components/ui/useReveal";
 import { animate } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-
+ 
 function MetricColumn({ stat, motionEnabled, isLast, index }) {
   const [ref, revealed] = useRevealOnce({ enabled: motionEnabled });
   const [animatedValue, setAnimatedValue] = useState(
