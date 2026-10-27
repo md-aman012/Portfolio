@@ -116,7 +116,7 @@ export const projects = [
   liveUrl: "https://workout-tracker-eight-lovat.vercel.app/",
   repoUrl: "https://github.com/md-aman012/Workout_Tracker",
   screenshot: "/images/4.jpg",
-  isPlaceholder: true,
+  isPlaceholder: false,
 },
 {
   id: "IEEE-SB-NITP",

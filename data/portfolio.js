@@ -48,7 +48,7 @@ export const skills = {
   "Frontend & Backend": ["React.js", "Next.js", "Node.js", "Express.js", "Tailwind CSS", "REST APIs", "JWT Authentication"],
   Databases: ["MongoDB", "PostgreSQL"],
   "Cloud & Services": ["AWS S3", "Google Cloud", "Cloudinary", "MongoDB Atlas"],
-  Tools: ["Git", "GitHub", "Postman", "VS Code", "npm", "Jupyter Notebook"],
+  Tools: ["Git", "GitHub", "Postman", "VS Code", "Jupyter Notebook","Claude Code"],
   Coursework: ["DBMS", "OOPS", "Operating Systems", "DSA", "Computer Networks", "AI", "ML"],
 };
 
@@ -98,10 +98,10 @@ export const stats = [
     detail: "of 3,01,051+ registrations",
   },
   {
-    value: "2,768",
-    numericTarget: 2768,
-    label: "Google Cloud Skills points",
-    detail: "Gold League",
+    value: "300+",
+    numericTarget: 300,
+    label: "DSA Problems",
+    detail: "Solved on different Platforms",
   },
   {
     value: "8+",

@@ -48,12 +48,12 @@ export default function Nav() {
           </li>
           <li>
             <a href="#skills" className="text-[#f2efea] hover:opacity-80 transition-opacity">
-              Content
+              Skills
             </a>
           </li>
           <li>
-            <a href="#journey" className="text-[#f2efea] hover:opacity-80 transition-opacity">
-              Speaking
+            <a href="#resume" className="text-[#f2efea] hover:opacity-80 transition-opacity">
+              Resume
             </a>
           </li>
           <li>
